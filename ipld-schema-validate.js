@@ -55,7 +55,7 @@ function create (schema, root) {
       typeValidators[typeName] = `return Kinds.List(obj) && Array.prototype.every.call(obj, ${valueValidator})`
     } else if (typeDef.kind === 'map') {
       if (typeDef.keyType !== 'String') {
-        throw new Error(`Invalid keyType for Map, expected String, found "${typeDef.valueType}"`)
+        throw new Error(`Invalid keyType for Map "${typeName}", expected String, found "${typeDef.keyType}"`)
       }
       let valueValidator = ''
       if (KindNames.includes(typeDef.valueType)) {
@@ -69,15 +69,17 @@ function create (schema, root) {
       }
       typeValidators[typeName] = `return Kinds.Map(obj) && Array.prototype.every.call(Object.values(obj), ${valueValidator})`
     } else {
-      throw new Error(`Can't deal with type kind: ${typeDef.kind}`)
+      throw new Error(`Can't deal with type kind: "${typeDef.kind}"`)
     }
   }
 
   addType(root)
+
   let fn = `${KindsDefn};\n`
   fn += `const Types = {\n${Object.entries(typeValidators).map((e) => `  ["${e[0]}"]: (obj) => { ${e[1]} }`).join(',\n')}\n};\n`
   fn += `return Types["${root}"](obj);`
   // console.log(fn)
+
   return new Function('obj', fn)
 }
 

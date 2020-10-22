@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "test": "npm run lint && mocha test/test-*.js",
+		"coverage": "hundreds mocha test/test-*.js",
     "lint": "standard"
   },
   "exports": {
@@ -29,6 +30,7 @@
   "homepage": "https://github.com/rvagg/js-ipld-schema-validate#readme",
   "devDependencies": {
     "chai": "^4.2.0",
+    "hundreds": "^0.0.9",
     "mocha": "^8.2.0",
     "standard": "^15.0.0"
   }
