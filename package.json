@@ -1,0 +1,35 @@
+{
+  "name": "ipld-schema-validate",
+  "version": "0.0.0",
+  "description": "IPLD Schema Validator",
+  "main": "ipld-schema-validate.js",
+  "type": "module",
+  "scripts": {
+    "test": "npm run lint && mocha test/test-*.js",
+    "lint": "standard"
+  },
+  "exports": {
+    ".": {
+      "import": "./ipld-schema-validate.js"
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/rvagg/js-ipld-schema-validate.git"
+  },
+  "keywords": [
+    "IPLD",
+    "Schema"
+  ],
+  "author": "Rod <rod@vagg.org> (http://r.va.gg/)",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/rvagg/js-ipld-schema-validate/issues"
+  },
+  "homepage": "https://github.com/rvagg/js-ipld-schema-validate#readme",
+  "devDependencies": {
+    "chai": "^4.2.0",
+    "mocha": "^8.2.0",
+    "standard": "^15.0.0"
+  }
+}
