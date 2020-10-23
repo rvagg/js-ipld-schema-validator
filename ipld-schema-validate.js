@@ -126,12 +126,23 @@ function create (schema, root) {
           throw new Error(`Unsupported struct representation "${Object.keys(typeDef.representation).join(',')}"`)
         }
       }
-      if (Object.keys(typeDef.representation[representation]).length) {
+      if (representation !== 'map' && Object.keys(typeDef.representation[representation]).length) {
         throw new Error(`Unsupported representation parameters for "${typeName}"`)
       }
 
+      const toFieldName = (fieldName) => {
+        if (typeof typeDef.representation.map === 'object' &&
+            typeof typeDef.representation.map.fields === 'object' &&
+            typeof typeDef.representation.map.fields[fieldName] === 'object' &&
+            typeof typeDef.representation.map.fields[fieldName].rename === 'string') {
+          return typeDef.representation.map.fields[fieldName].rename
+        }
+        return fieldName
+      }
+
       const requiredFields = []
-      for (const [fieldName, fieldDef] of Object.entries(typeDef.fields)) {
+      for (let [fieldName, fieldDef] of Object.entries(typeDef.fields)) {
+        fieldName = toFieldName(fieldName)
         const fieldKey = `${typeName} > ${fieldName}`
         if (representation !== 'map' || fieldDef.optional !== true) {
           requiredFields.push(fieldName)

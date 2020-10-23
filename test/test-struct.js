@@ -379,4 +379,41 @@ describe('Structs', () => {
     assert.isTrue(validator({}))
     assert.isFalse(validator({ a: 1 }))
   })
+
+  it('empty struct', () => {
+    /*
+      type StructAsMapWithRenames struct {
+        bar Bool (rename "b")
+        boom String
+        baz String (rename "z")
+        foo Int (rename "f" implicit "0")
+      }
+    */
+    const validator = SchemaValidate.create({
+      types: {
+        StructAsMapWithRenames: {
+          kind: 'struct',
+          fields: {
+            bar: { type: 'Bool' },
+            boom: { type: 'String' },
+            baz: { type: 'String' },
+            foo: { type: 'Int' }
+          },
+          representation: {
+            map: {
+              fields: {
+                bar: { rename: 'b' },
+                baz: { rename: 'z' },
+                foo: { rename: 'f' }
+              }
+            }
+          }
+        }
+      }
+    }, 'StructAsMapWithRenames')
+
+    assert.isFalse(validator({ bar: true, boom: 'str', baz: 'str', foo: 100 }))
+    assert.isFalse(validator({ bar: true, boom: 'str', baz: 'str', b: 'str', z: 'str', f: 100, foo: 100 }))
+    assert.isTrue(validator({ b: true, boom: 'str', z: 'str', f: 100 }))
+  })
 })
