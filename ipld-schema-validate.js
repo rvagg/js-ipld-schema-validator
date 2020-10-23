@@ -86,8 +86,11 @@ function create (schema, root) {
         }
         typeValidators[fieldKey] = `return ${fieldValidator}`
       }
-      // typeValidators[typeName] = `return Kinds.Map(obj)${fields.map(({ key, name }) => ` && Types["${key}"](obj["${name}"])`).join('')}`
-      typeValidators[typeName] = `const keys = obj && Object.keys(obj); return Kinds.Map(obj) && ${JSON.stringify(requiredFields)}.every((k) => keys.includes(k)) && Object.entries(obj).every(([name, value]) => Types["${typeName} -> " + name] && Types["${typeName} -> " + name](value))`
+      if (typeDef.representation && typeof typeDef.representation.tuple === 'object') {
+        typeValidators[typeName] = `return Kinds.List(obj) && obj.length === ${requiredFields.length}${requiredFields.map((fieldName, i) => ` && Types["${typeName} -> ${fieldName}"](obj[${i}])`).join('')}`
+      } else {
+        typeValidators[typeName] = `const keys = obj && Object.keys(obj); return Kinds.Map(obj) && ${JSON.stringify(requiredFields)}.every((k) => keys.includes(k)) && Object.entries(obj).every(([name, value]) => Types["${typeName} -> " + name] && Types["${typeName} -> " + name](value))`
+      }
     } else {
       throw new Error(`Can't deal with type kind: "${typeDef.kind}"`)
     }
