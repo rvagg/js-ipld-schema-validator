@@ -455,4 +455,36 @@ describe('Structs', () => {
     assert.isTrue(validator({ baz: 'str' }))
     assert.isFalse(validator({}))
   })
+
+  it('tuple with custom fieldOrder', () => {
+    /*
+      type StructAsTupleWithCustomFieldorder struct {
+        foo Int
+        bar Bool
+        baz String
+      } representation tuple {
+        fieldOrder ["baz", "bar", "foo"]
+      }
+    */
+    const validator = SchemaValidate.create({
+      types: {
+        StructAsTupleWithCustomFieldorder: {
+          kind: 'struct',
+          fields: {
+            foo: { type: 'Int' },
+            bar: { type: 'Bool' },
+            baz: { type: 'String' }
+          },
+          representation: {
+            tuple: {
+              fieldOrder: ['baz', 'bar', 'foo']
+            }
+          }
+        }
+      }
+    }, 'StructAsTupleWithCustomFieldorder')
+
+    assert.isFalse(validator([100, true, 'this is baz']))
+    assert.isTrue(validator(['this is baz', true, 100]))
+  })
 })

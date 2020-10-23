@@ -126,11 +126,8 @@ function create (schema, root) {
           throw new Error(`Unsupported struct representation "${Object.keys(typeDef.representation).join(',')}"`)
         }
       }
-      if (representation !== 'map' && Object.keys(typeDef.representation[representation]).length) {
-        throw new Error(`Unsupported representation parameters for "${typeName}"`)
-      }
 
-      const requiredFields = []
+      let requiredFields = []
       for (let [fieldName, fieldDef] of Object.entries(typeDef.fields)) {
         let required = representation !== 'map' || fieldDef.optional !== true
 
@@ -167,6 +164,9 @@ function create (schema, root) {
       }
 
       if (representation === 'tuple') {
+        if (Array.isArray(typeDef.representation.tuple.fieldOrder)) {
+          requiredFields = typeDef.representation.tuple.fieldOrder
+        }
         typeValidators[typeName] = `return Kinds.List(obj) && obj.length === ${requiredFields.length}${requiredFields.map((fieldName, i) => ` && Types["${typeName} > ${fieldName}"](obj[${i}])`).join('')}`
       } else {
         typeValidators[typeName] = `const keys = obj && Object.keys(obj); return Kinds.Map(obj) && ${JSON.stringify(requiredFields)}.every((k) => keys.includes(k)) && Object.entries(obj).every(([name, value]) => Types["${typeName} > " + name] && Types["${typeName} > " + name](value))`
