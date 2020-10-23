@@ -14,7 +14,7 @@ describe('Nested maps and lists', () => {
       types: {
         $list: {
           kind: 'list',
-          valueType: 'Link'
+          valueType: { kind: 'link' }
         },
         $map: {
           kind: 'map',

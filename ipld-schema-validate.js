@@ -1,6 +1,8 @@
 /* eslint-disable no-new-func */
 
-const KindNames = ['Null', 'Int', 'Float', 'String', 'Bool', 'Bytes', 'Link', 'List', 'Map']
+const ScalarKindNames = ['Null', 'Int', 'Float', 'String', 'Bool', 'Bytes', 'Link']
+// const KindNames = ScalarKindNames.concat(['List', 'Map'])
+const ScalarKindNamesLower = ScalarKindNames.map((n) => n.toLowerCase())
 
 const KindsDefn = `
 const Kinds = {
@@ -15,14 +17,25 @@ const Kinds = {
   Map: (obj) => !Kinds.Null(obj) && typeof obj === "object" && obj["asCID"] !== obj && !Kinds.List(obj) && !Kinds.Bytes(obj)
 }`
 
+function kindDefn (obj) {
+  if (typeof obj === 'string' && ScalarKindNames.includes(obj)) {
+    return obj
+  }
+  if (typeof obj === 'object' && typeof obj.kind === 'string' && ScalarKindNamesLower.includes(obj.kind)) {
+    return obj.kind.charAt(0).toUpperCase() + obj.kind.substring(1)
+  }
+  return null
+}
+
 function create (schema, root) {
   if (!root || typeof root !== 'string') {
     throw new TypeError('A root is required')
   }
 
   // TODO: wind this back to the scalar kinds only, you shouldn't be able to 'Map' and 'List'
-  if (typeof root === 'string' && KindNames.includes(root)) {
-    return new Function('obj', `${KindsDefn}; return Kinds.${root}(obj)`)
+  const rootKind = kindDefn(root)
+  if (rootKind) {
+    return new Function('obj', `${KindsDefn}; return Kinds.${rootKind}(obj)`)
   }
 
   if (!schema || !schema.types || !Object.keys(schema.types).length) {
@@ -44,8 +57,9 @@ function create (schema, root) {
 
     if (typeDef.kind === 'list') {
       let valueValidator = ''
-      if (KindNames.includes(typeDef.valueType)) {
-        valueValidator = `Kinds.${typeDef.valueType}`
+      const valueKind = kindDefn(typeDef.valueType)
+      if (valueKind) {
+        valueValidator = `Kinds.${valueKind}`
       } else {
         if (typeDef.valueType === typeName) {
           throw new Error(`Recursive typedef in type "${typeName}"`)
@@ -59,8 +73,9 @@ function create (schema, root) {
         throw new Error(`Invalid keyType for Map "${typeName}", expected String, found "${typeDef.keyType}"`)
       }
       let valueValidator = ''
-      if (KindNames.includes(typeDef.valueType)) {
-        valueValidator = `Kinds.${typeDef.valueType}`
+      const valueKind = kindDefn(typeDef.valueType)
+      if (valueKind) {
+        valueValidator = `Kinds.${valueKind}`
       } else {
         if (typeDef.valueType === typeName) {
           throw new Error(`Recursive typedef in type "${typeName}"`)
@@ -75,14 +90,18 @@ function create (schema, root) {
         const fieldKey = `${typeName} -> ${fieldName}`
         requiredFields.push(fieldName)
         let fieldValidator = ''
-        if (KindNames.includes(fieldDef.type)) {
-          fieldValidator = `Kinds.${fieldDef.type}(obj)`
+        const fieldKind = kindDefn(fieldDef.type) || kindDefn(fieldDef) // { type: 'String' } || { kind: 'link' }
+        if (fieldKind) {
+          fieldValidator = `Kinds.${fieldKind}(obj)`
         } else {
           if (fieldDef.type === typeName) {
             throw new Error(`Recursive typedef in type "${typeName}"`)
           }
           addType(fieldDef.type)
           fieldValidator = `Types["${fieldDef.type}"](obj)`
+        }
+        if (fieldDef.nullable === true) {
+          fieldValidator = `obj === null || ${fieldValidator}`
         }
         typeValidators[fieldKey] = `return ${fieldValidator}`
       }

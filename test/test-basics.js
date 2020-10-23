@@ -63,6 +63,15 @@ describe('Base kinds', () => {
     assert.isTrue(validator(new Uint8Array(0)))
   })
 
+  it('link', () => {
+    const validator = SchemaValidate.create({}, 'Link')
+    for (const obj of [null, 1.01, -0.1, 101, -101, 'a string', false, true, new Uint8Array(0), Uint8Array.from([1, 2, 3]), [1, 2, 3], { obj: 'nope' }, undefined]) {
+      assert.isFalse(validator(obj), `obj: ${obj} != 'link'`)
+    }
+    assert.isTrue(validator(fauxCid))
+  })
+
+  /* can't use recursive kind names
   it('list', () => {
     const validator = SchemaValidate.create({}, 'List')
     for (const obj of [null, 1.01, -0.1, 101, -101, 'a string', false, true, fauxCid, new Uint8Array(0), Uint8Array.from([1, 2, 3]), { obj: 'nope' }, undefined]) {
@@ -71,14 +80,6 @@ describe('Base kinds', () => {
     assert.isTrue(validator([1, 2, 3]))
     assert.isTrue(validator([1, 'one', true, null]))
     assert.isTrue(validator([]))
-  })
-
-  it('link', () => {
-    const validator = SchemaValidate.create({}, 'Link')
-    for (const obj of [null, 1.01, -0.1, 101, -101, 'a string', false, true, new Uint8Array(0), Uint8Array.from([1, 2, 3]), [1, 2, 3], { obj: 'nope' }, undefined]) {
-      assert.isFalse(validator(obj), `obj: ${obj} != 'link'`)
-    }
-    assert.isTrue(validator(fauxCid))
   })
 
   it('map', () => {
@@ -90,6 +91,7 @@ describe('Base kinds', () => {
     assert.isTrue(validator({}))
     assert.isTrue(validator(Object.create(null)))
   })
+  */
 })
 
 describe('List types', () => {
@@ -142,7 +144,7 @@ describe('List types', () => {
       types: {
         $list: {
           kind: 'list',
-          valueType: 'Link'
+          valueType: { kind: 'link' }
         }
       }
     }, '$list')
@@ -215,7 +217,7 @@ describe('Map types', () => {
         $map: {
           kind: 'map',
           keyType: 'String',
-          valueType: 'Link'
+          valueType: { kind: 'link' }
         }
       }
     }, '$map')
