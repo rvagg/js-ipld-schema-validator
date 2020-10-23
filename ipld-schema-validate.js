@@ -44,16 +44,33 @@ function create (schema, root) {
 
   const typeValidators = {}
 
-  const addType = (typeName) => {
+  const addType = (typeName, typeDef) => {
     if (typeValidators[typeName]) { // already added this one
       return
     }
 
-    if (typeof schema.types[typeName] !== 'object') {
-      throw new TypeError(`A type must match an existing type definition ("${typeName}")`)
+    if (!typeDef) {
+      if (typeof schema.types[typeName] !== 'object') {
+        throw new TypeError(`A type must match an existing type definition ("${typeName}")`)
+      }
+      typeDef = schema.types[typeName]
     }
 
-    const typeDef = schema.types[typeName]
+    const defineType = (defType, name) => {
+      if (defType === typeName) {
+        throw new Error(`Recursive typedef in type "${typeName}"`)
+      }
+      let innerTypeName = defType
+      if (typeof innerTypeName === 'object' && defType.kind) { // anonymous inline map or list!
+        innerTypeName = `${typeName} -> ${name} (anon)`
+        addType(innerTypeName, defType)
+      } else if (typeof innerTypeName === 'string') {
+        addType(innerTypeName)
+      } else {
+        throw new Error(`Bad field type for "${typeName}": "${name}"`)
+      }
+      return innerTypeName
+    }
 
     if (typeDef.kind === 'list') {
       let valueValidator = ''
@@ -61,11 +78,11 @@ function create (schema, root) {
       if (valueKind) {
         valueValidator = `Kinds.${valueKind}`
       } else {
-        if (typeDef.valueType === typeName) {
-          throw new Error(`Recursive typedef in type "${typeName}"`)
-        }
-        addType(typeDef.valueType)
-        valueValidator = `Types["${typeDef.valueType}"]`
+        const valueTypeName = defineType(typeDef.valueType, 'valueType')
+        valueValidator = `Types["${valueTypeName}"]`
+      }
+      if (typeDef.valueNullable === true) {
+        valueValidator = `(v) => v === null || ${valueValidator}(v)`
       }
       typeValidators[typeName] = `return Kinds.List(obj) && Array.prototype.every.call(obj, ${valueValidator})`
     } else if (typeDef.kind === 'map') {
@@ -77,35 +94,50 @@ function create (schema, root) {
       if (valueKind) {
         valueValidator = `Kinds.${valueKind}`
       } else {
-        if (typeDef.valueType === typeName) {
-          throw new Error(`Recursive typedef in type "${typeName}"`)
-        }
-        addType(typeDef.valueType)
-        valueValidator = `Types["${typeDef.valueType}"]`
+        const valueTypeName = defineType(typeDef.valueType, 'valueType')
+        valueValidator = `Types["${valueTypeName}"]`
+      }
+      if (typeDef.valueNullable === true) {
+        valueValidator = `(v) => v === null || ${valueValidator}(v)`
       }
       typeValidators[typeName] = `return Kinds.Map(obj) && Array.prototype.every.call(Object.values(obj), ${valueValidator})`
     } else if (typeDef.kind === 'struct') {
+      let representation = 'map'
+      if (typeDef.representation) {
+        if (typeof typeDef.representation.tuple === 'object') {
+          representation = 'tuple'
+        } else if (typeof typeDef.representation.map !== 'object') {
+          throw new Error(`Unsupported struct representation "${Object.keys(typeDef.representation).join(',')}"`)
+        }
+      }
+      if (Object.keys(typeDef.representation[representation]).length) {
+        throw new Error(`Unsupported representation parameters for "${typeName}"`)
+      }
+
       const requiredFields = []
       for (const [fieldName, fieldDef] of Object.entries(typeDef.fields)) {
         const fieldKey = `${typeName} -> ${fieldName}`
-        requiredFields.push(fieldName)
+        if (representation !== 'map' || fieldDef.optional !== true) {
+          requiredFields.push(fieldName)
+        }
+        if (representation !== 'map' && fieldDef.optional === true) {
+          throw new Error('Don\'t support "optional" fields for non-map structs')
+        }
         let fieldValidator = ''
         const fieldKind = kindDefn(fieldDef.type) || kindDefn(fieldDef) // { type: 'String' } || { kind: 'link' }
         if (fieldKind) {
           fieldValidator = `Kinds.${fieldKind}(obj)`
         } else {
-          if (fieldDef.type === typeName) {
-            throw new Error(`Recursive typedef in type "${typeName}"`)
-          }
-          addType(fieldDef.type)
-          fieldValidator = `Types["${fieldDef.type}"](obj)`
+          const fieldTypeName = defineType(fieldDef.type, fieldName)
+          fieldValidator = `Types["${fieldTypeName}"](obj)`
         }
         if (fieldDef.nullable === true) {
           fieldValidator = `obj === null || ${fieldValidator}`
         }
         typeValidators[fieldKey] = `return ${fieldValidator}`
       }
-      if (typeDef.representation && typeof typeDef.representation.tuple === 'object') {
+
+      if (representation === 'tuple') {
         typeValidators[typeName] = `return Kinds.List(obj) && obj.length === ${requiredFields.length}${requiredFields.map((fieldName, i) => ` && Types["${typeName} -> ${fieldName}"](obj[${i}])`).join('')}`
       } else {
         typeValidators[typeName] = `const keys = obj && Object.keys(obj); return Kinds.Map(obj) && ${JSON.stringify(requiredFields)}.every((k) => keys.includes(k)) && Object.entries(obj).every(([name, value]) => Types["${typeName} -> " + name] && Types["${typeName} -> " + name](value))`

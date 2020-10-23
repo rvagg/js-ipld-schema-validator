@@ -139,6 +139,32 @@ describe('List types', () => {
     assert.isTrue(validator([]))
   })
 
+  it('[String:nullable String]', () => {
+    const validator = SchemaValidate.create({
+      types: {
+        $list: {
+          kind: 'list',
+          valueType: 'String',
+          valueNullable: true
+        }
+      }
+    }, '$list')
+
+    for (const obj of [null, 1.01, -0.1, 101, -101, 'a string', false, true, fauxCid, new Uint8Array(0), Uint8Array.from([1, 2, 3]), { obj: 'nope' }, undefined]) {
+      assert.isFalse(validator(obj), `obj: ${obj} != '[String:String]'`)
+    }
+    assert.isFalse(validator([1, 'one', true]))
+    assert.isFalse(validator([0]))
+    assert.isFalse(validator([1, 2, 3]))
+    assert.isFalse(validator([fauxCid, fauxCid, fauxCid]))
+    assert.isTrue(validator(['one']))
+    assert.isTrue(validator(['one', 'two', 'three']))
+    assert.isTrue(validator(['one', null, 'three']))
+    assert.isTrue(validator([null]))
+    assert.isTrue(validator([null, null]))
+    assert.isTrue(validator([]))
+  })
+
   it('[String:&Any]', () => {
     const validator = SchemaValidate.create({
       types: {
@@ -232,6 +258,33 @@ describe('Map types', () => {
     assert.isFalse(validator({ o: 1, t: 2, th: 3 }))
     assert.isTrue(validator({ o: fauxCid }))
     assert.isTrue(validator({ o: fauxCid, t: fauxCid, th: fauxCid }))
+    assert.isTrue(validator({}))
+  })
+
+  it('{String:nullable Int}', () => {
+    const validator = SchemaValidate.create({
+      types: {
+        $map: {
+          kind: 'map',
+          keyType: 'String',
+          valueType: 'Int',
+          valueNullable: true
+        }
+      }
+    }, '$map')
+
+    for (const obj of [null, 1.01, -0.1, 101, -101, 'a string', false, true, fauxCid, new Uint8Array(0), Uint8Array.from([1, 2, 3]), ['one', 'two', 'three'], [1, 'one', true], undefined]) {
+      assert.isFalse(validator(obj), `obj: ${obj} != '{String:Int}'`)
+    }
+    assert.isFalse(validator({ num: 1, str: 'obj' }))
+    assert.isFalse(validator({ o: fauxCid }))
+    assert.isFalse(validator({ o: fauxCid, t: fauxCid, th: fauxCid }))
+    assert.isFalse(validator({ o: 'one' }))
+    assert.isFalse(validator({ o: 'one', t: 'two', th: 'three' }))
+    assert.isTrue(validator({ o: 1 }))
+    assert.isTrue(validator({ o: 1, t: 2, th: 3 }))
+    assert.isTrue(validator({ o: null }))
+    assert.isTrue(validator({ o: 1, t: null, th: 3 }))
     assert.isTrue(validator({}))
   })
 })

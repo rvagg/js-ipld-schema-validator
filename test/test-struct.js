@@ -238,4 +238,126 @@ describe('Structs', () => {
     assert.isTrue(validator([1, true, null]))
     assert.isTrue(validator([null, true, null]))
   })
+
+  it('struct optionals', () => {
+    const validator = SchemaValidate.create({
+      types: {
+        SimpleStruct: {
+          kind: 'struct',
+          fields: {
+            foo: { type: 'Int', optional: true },
+            bar: { type: 'Bool' },
+            baz: { type: 'String', optional: true }
+          },
+          representation: { map: {} }
+        }
+      }
+    }, 'SimpleStruct')
+    assert.isTrue(validator({ foo: 100, bar: true, baz: 'this is baz' }))
+    assert.isFalse(validator({}))
+    assert.isTrue(validator({ foo: 100, bar: true }))
+    assert.isFalse(validator({ foo: 100, baz: 'this is baz' }))
+    assert.isTrue(validator({ bar: true, baz: 'this is baz' }))
+    assert.isFalse(validator({ foo: 100, bar: true, baz: 'this is baz', nope: 1 }))
+    assert.isFalse(validator({ foo: undefined, bar: true, baz: '' })) // the next 3 don't validate because 'undefined' isn't in the data model
+    assert.isFalse(validator({ foo: 1, bar: true, baz: undefined }))
+    assert.isFalse(validator({ foo: undefined, bar: true, baz: undefined }))
+    assert.isTrue(validator({ bar: true, baz: '' }))
+    assert.isTrue(validator({ foo: 1, bar: true }))
+    assert.isTrue(validator({ bar: true }))
+  })
+
+  it('struct with anonymous types', () => {
+    /*
+      type StructWithAnonymousTypes struct {
+        fooField optional {String:String}
+        barField nullable {String:String}
+        bazField {String:nullable String}
+        wozField {String:[nullable String]}
+      }
+    */
+    const validator = SchemaValidate.create({
+      types: {
+        StructWithAnonymousTypes: {
+          kind: 'struct',
+          fields: {
+            fooField: {
+              type: {
+                kind: 'map',
+                keyType: 'String',
+                valueType: 'String'
+              },
+              optional: true
+            },
+            barField: {
+              type: {
+                kind: 'map',
+                keyType: 'String',
+                valueType: 'String'
+              },
+              nullable: true
+            },
+            bazField: {
+              type: {
+                kind: 'map',
+                keyType: 'String',
+                valueType: 'String',
+                valueNullable: true
+              }
+            },
+            wozField: {
+              type: {
+                kind: 'map',
+                keyType: 'String',
+                valueType: {
+                  kind: 'list',
+                  valueType: 'String',
+                  valueNullable: true
+                }
+              }
+            }
+          },
+          representation: {
+            map: {}
+          }
+        }
+      }
+    }, 'StructWithAnonymousTypes')
+
+    assert.isFalse(validator({}))
+
+    assert.isTrue(validator({
+      fooField: { s: '', a: 'b' },
+      barField: { string: 'yep', a: 'b' },
+      bazField: { bip: 'bop', a: 'b' },
+      wozField: { hack: ['fip', 'fop'], gack: [] }
+    }))
+
+    assert.isTrue(validator({ fooField: {}, barField: {}, bazField: {}, wozField: {} }))
+    assert.isTrue(validator({ barField: {}, bazField: {}, wozField: {} }))
+
+    assert.isTrue(validator({
+      barField: { string: 'yep', a: 'b' },
+      bazField: { bip: 'bop', a: 'b' },
+      wozField: { hack: ['fip', 'fop'], gack: [] }
+    }))
+
+    assert.isTrue(validator({
+      barField: null,
+      bazField: { bip: 'bop', a: 'b' },
+      wozField: { hack: ['fip', 'fop'], gack: [] }
+    }))
+
+    assert.isTrue(validator({
+      barField: null,
+      bazField: { bip: null, a: 'b' },
+      wozField: { hack: ['fip', 'fop'], gack: [] }
+    }))
+
+    assert.isTrue(validator({
+      barField: null,
+      bazField: { bip: null, a: 'b' },
+      wozField: { hack: ['fip', null], gack: [] }
+    }))
+  })
 })
