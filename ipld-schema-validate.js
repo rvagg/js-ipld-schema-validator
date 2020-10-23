@@ -70,7 +70,7 @@ function create (schema, root) {
       }
       let innerTypeName = defType
       if (typeof innerTypeName === 'object' && defType.kind) { // anonymous inline map or list!
-        innerTypeName = `${typeName} -> ${name} (anon)`
+        innerTypeName = `${typeName} > ${name} (anon)`
         addType(innerTypeName, defType)
       } else if (typeof innerTypeName === 'string') {
         addType(innerTypeName)
@@ -132,7 +132,7 @@ function create (schema, root) {
 
       const requiredFields = []
       for (const [fieldName, fieldDef] of Object.entries(typeDef.fields)) {
-        const fieldKey = `${typeName} -> ${fieldName}`
+        const fieldKey = `${typeName} > ${fieldName}`
         if (representation !== 'map' || fieldDef.optional !== true) {
           requiredFields.push(fieldName)
         }
@@ -154,9 +154,9 @@ function create (schema, root) {
       }
 
       if (representation === 'tuple') {
-        typeValidators[typeName] = `return Kinds.List(obj) && obj.length === ${requiredFields.length}${requiredFields.map((fieldName, i) => ` && Types["${typeName} -> ${fieldName}"](obj[${i}])`).join('')}`
+        typeValidators[typeName] = `return Kinds.List(obj) && obj.length === ${requiredFields.length}${requiredFields.map((fieldName, i) => ` && Types["${typeName} > ${fieldName}"](obj[${i}])`).join('')}`
       } else {
-        typeValidators[typeName] = `const keys = obj && Object.keys(obj); return Kinds.Map(obj) && ${JSON.stringify(requiredFields)}.every((k) => keys.includes(k)) && Object.entries(obj).every(([name, value]) => Types["${typeName} -> " + name] && Types["${typeName} -> " + name](value))`
+        typeValidators[typeName] = `const keys = obj && Object.keys(obj); return Kinds.Map(obj) && ${JSON.stringify(requiredFields)}.every((k) => keys.includes(k)) && Object.entries(obj).every(([name, value]) => Types["${typeName} > " + name] && Types["${typeName} > " + name](value))`
       }
 
       return
@@ -166,6 +166,7 @@ function create (schema, root) {
       if (typeof typeDef.representation !== 'object') {
         throw new Error(`Bad union definition for "${typeName}`)
       }
+
       if (typeof typeDef.representation.keyed === 'object') {
         const keys = typeDef.representation.keyed
         const validators = Object.entries(keys).map(([key, innerTypeName]) => {
@@ -189,7 +190,6 @@ function create (schema, root) {
       if (typeof typeDef.representation.kinded === 'object') {
         const kinds = typeDef.representation.kinded
         const validators = Object.entries(kinds).map(([kind, innerTypeName]) => {
-          console.log('kind', kind, '->', innerTypeName)
           if (typeof innerTypeName !== 'string') {
             throw new Error(`Kinded union "${typeName} refers to non-string type name: "${innerTypeName}"`)
           }
@@ -201,6 +201,26 @@ function create (schema, root) {
           return `(Kinds.${tc(kind)}(obj) && Types["${innerTypeName}"](obj))`
         })
         typeValidators[typeName] = `return ${validators.join(' || ')}`
+
+        return
+      }
+
+      if (typeof typeDef.representation.inline === 'object') {
+        const inline = typeDef.representation.inline
+        if (typeof inline.discriminantKey !== 'string') {
+          throw new Error(`Expected "discriminantKey" for inline union "${typeName}"`)
+        }
+        if (typeof inline.discriminantTable !== 'object') {
+          throw new Error(`Expected "discriminantTable" for inline union "${typeName}"`)
+        }
+        const validators = Object.entries(inline.discriminantTable).map(([key, innerTypeName]) => {
+          if (typeof innerTypeName !== 'string') {
+            throw new Error(`Inline union "${typeName} refers to non-string type name: "${innerTypeName}"`)
+          }
+          addType(innerTypeName)
+          return `(key === "${key}" && Types["${innerTypeName}"](obj))`
+        })
+        typeValidators[typeName] = `const key = obj && obj["${inline.discriminantKey}"]; if (!Kinds.Map(obj) || !Kinds.String(key)) { return false }; obj = Object.assign({}, obj); delete obj["${inline.discriminantKey}"]; return ${validators.join(' || ')}`
 
         return
       }

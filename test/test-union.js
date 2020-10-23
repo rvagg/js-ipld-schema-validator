@@ -9,7 +9,7 @@ const fauxCid = {}
 fauxCid.asCID = fauxCid
 
 describe('Unions', () => {
-  it('keyed union', () => {
+  it('keyed', () => {
     const validator = SchemaValidate.create({
       types: {
         UnionKeyed: {
@@ -34,7 +34,7 @@ describe('Unions', () => {
     assert.isFalse(validator({ baz: true }))
   })
 
-  it('kinded union', () => {
+  it('kinded', () => {
     const validator = SchemaValidate.create({
       types: {
         Bar: { kind: 'bool' },
@@ -106,5 +106,70 @@ describe('Unions', () => {
     assert.isTrue(validator({}))
     assert.isTrue(validator({ a: 1, b: 2 }))
     assert.isFalse(validator({ a: 'a', b: 2 }))
+  })
+
+  it('inline', () => {
+    /*
+      type Bar struct {
+        bral String
+      }
+
+      type Foo struct {
+        froz Bool
+      }
+
+      type UnionInline union {
+        | Foo "foo"
+        | Bar "bar"
+      } representation inline {
+        discriminantKey "tag"
+      }
+    */
+    const validator = SchemaValidate.create({
+      types: {
+        UnionInline: {
+          kind: 'union',
+          representation: {
+            inline: {
+              discriminantKey: 'tag',
+              discriminantTable: {
+                foo: 'Foo',
+                bar: 'Bar'
+              }
+            }
+          }
+        },
+        Foo: {
+          kind: 'struct',
+          fields: {
+            froz: { type: 'Bool' }
+          },
+          representation: { map: {} }
+        },
+        Bar: {
+          kind: 'struct',
+          fields: {
+            bral: { type: 'String' }
+          },
+          representation: { map: {} }
+        }
+      }
+    }, 'UnionInline')
+
+    let obj = { tag: 'foo', froz: true }
+    assert.isTrue(validator(obj))
+    assert.deepEqual(obj, { tag: 'foo', froz: true }) // unmolested
+
+    obj = { tag: 'bar', bral: 'zot' }
+    assert.isTrue(validator(obj))
+    assert.deepEqual(obj, { tag: 'bar', bral: 'zot' }) // unmolested
+
+    assert.isFalse(validator({ froz: true }))
+    assert.isFalse(validator({ bral: 'zot' }))
+    assert.isFalse(validator({ tag: 'foo' }))
+    assert.isFalse(validator({ tag: 'bar' }))
+    assert.isFalse(validator({ tag: 'foo', bral: 'zot' }))
+    assert.isFalse(validator({ tag: 'bar', froz: true }))
+    assert.isFalse(validator({ tag: 'foo', froz: 'zot' }))
   })
 })
