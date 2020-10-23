@@ -287,4 +287,37 @@ describe('Map types', () => {
     assert.isTrue(validator({ o: 1, t: null, th: 3 }))
     assert.isTrue(validator({}))
   })
+
+  it('map listpairs', () => {
+    /*
+      type MapAsListpairs {String:String} representation listpairs
+    */
+    const validator = SchemaValidate.create({
+      types: {
+        MapAsListpairs: {
+          kind: 'map',
+          keyType: 'String',
+          valueType: 'String',
+          representation: { listpairs: {} }
+        }
+      }
+    }, 'MapAsListpairs')
+
+    for (const obj of [null, 1.01, -0.1, 101, -101, 'a string', false, true, fauxCid, new Uint8Array(0), Uint8Array.from([1, 2, 3]), undefined]) {
+      assert.isFalse(validator(obj), `obj: ${obj} != '{String:String}'`)
+    }
+    assert.isFalse(validator([1, 'obj']))
+    assert.isFalse(validator([fauxCid]))
+    assert.isFalse(validator([fauxCid, fauxCid, fauxCid]))
+    assert.isFalse(validator([1]))
+    assert.isFalse(validator([1, 2, 3]))
+    assert.isFalse(validator(['one']))
+    assert.isFalse(validator(['one', 'two', 'three']))
+    assert.isTrue(validator([['o', 'one']]))
+    assert.isFalse(validator([[1, 'one']]))
+    assert.isTrue(validator([['o', 'one'], ['t', 'two'], ['th', 'three']]))
+    assert.isFalse(validator([['o', 'one'], ['t', 'two'], ['th', fauxCid]]))
+    assert.isFalse(validator([['o', 1], ['t', 2], ['th', 3]]))
+    assert.isTrue(validator([]))
+  })
 })

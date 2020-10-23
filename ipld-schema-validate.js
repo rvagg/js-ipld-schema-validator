@@ -101,6 +101,16 @@ function create (schema, root) {
       if (typeDef.keyType !== 'String') {
         throw new Error(`Invalid keyType for Map "${typeName}", expected String, found "${typeDef.keyType}"`)
       }
+
+      let representation = 'map'
+      if (typeDef.representation) {
+        if (typeof typeDef.representation.listpairs === 'object') {
+          representation = 'listpairs'
+        } else if (typeof typeDef.representation.map !== 'object') {
+          throw new Error(`Unsupported map representation "${Object.keys(typeDef.representation).join(',')}"`)
+        }
+      }
+
       let valueValidator = ''
       const valueKind = kindDefn(typeDef.valueType)
       if (valueKind) {
@@ -112,6 +122,12 @@ function create (schema, root) {
       if (typeDef.valueNullable === true) {
         valueValidator = `(v) => v === null || ${valueValidator}(v)`
       }
+
+      if (representation === 'listpairs') {
+        typeValidators[typeName] = `return Kinds.List(obj) && Array.prototype.every.call(obj, (e) => Kinds.List(e) && e.length === 2 && Kinds.String(e[0]) && (${valueValidator})(e[1]))`
+        return
+      }
+
       typeValidators[typeName] = `return Kinds.Map(obj) && Array.prototype.every.call(Object.values(obj), ${valueValidator})`
 
       return
