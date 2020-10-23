@@ -360,4 +360,23 @@ describe('Structs', () => {
       wozField: { hack: ['fip', null], gack: [] }
     }))
   })
+
+  it('empty struct', () => {
+    const validator = SchemaValidate.create({
+      types: {
+        StructEmpty: {
+          kind: 'struct',
+          fields: {},
+          representation: { map: {} }
+        }
+      }
+    }, 'StructEmpty')
+
+    for (const obj of [101, 1.01, 'a string', false, true, fauxCid, Uint8Array.from([1, 2, 3]), [1, 2, 3], null, undefined]) {
+      assert.isFalse(validator(obj))
+    }
+
+    assert.isTrue(validator({}))
+    assert.isFalse(validator({ a: 1 }))
+  })
 })
