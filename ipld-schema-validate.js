@@ -20,6 +20,7 @@ function create (schema, root) {
     throw new TypeError('A root is required')
   }
 
+  // TODO: wind this back to the scalar kinds only, you shouldn't be able to 'Map' and 'List'
   if (typeof root === 'string' && KindNames.includes(root)) {
     return new Function('obj', `${KindsDefn}; return Kinds.${root}(obj)`)
   }
@@ -68,6 +69,25 @@ function create (schema, root) {
         valueValidator = `Types["${typeDef.valueType}"]`
       }
       typeValidators[typeName] = `return Kinds.Map(obj) && Array.prototype.every.call(Object.values(obj), ${valueValidator})`
+    } else if (typeDef.kind === 'struct') {
+      const requiredFields = []
+      for (const [fieldName, fieldDef] of Object.entries(typeDef.fields)) {
+        const fieldKey = `${typeName} -> ${fieldName}`
+        requiredFields.push(fieldName)
+        let fieldValidator = ''
+        if (KindNames.includes(fieldDef.type)) {
+          fieldValidator = `Kinds.${fieldDef.type}(obj)`
+        } else {
+          if (fieldDef.type === typeName) {
+            throw new Error(`Recursive typedef in type "${typeName}"`)
+          }
+          addType(fieldDef.type)
+          fieldValidator = `Types["${fieldDef.type}"](obj)`
+        }
+        typeValidators[fieldKey] = `return ${fieldValidator}`
+      }
+      // typeValidators[typeName] = `return Kinds.Map(obj)${fields.map(({ key, name }) => ` && Types["${key}"](obj["${name}"])`).join('')}`
+      typeValidators[typeName] = `const keys = obj && Object.keys(obj); return Kinds.Map(obj) && ${JSON.stringify(requiredFields)}.every((k) => keys.includes(k)) && Object.entries(obj).every(([name, value]) => Types["${typeName} -> " + name] && Types["${typeName} -> " + name](value))`
     } else {
       throw new Error(`Can't deal with type kind: "${typeDef.kind}"`)
     }
@@ -76,7 +96,7 @@ function create (schema, root) {
   addType(root)
 
   let fn = `${KindsDefn};\n`
-  fn += `const Types = {\n${Object.entries(typeValidators).map((e) => `  ["${e[0]}"]: (obj) => { ${e[1]} }`).join(',\n')}\n};\n`
+  fn += `const Types = {\n${Object.entries(typeValidators).map(([name, fn]) => `  ["${name}"]: (obj) => { ${fn} }`).join(',\n')}\n};\n`
   fn += `return Types["${root}"](obj);`
   // console.log(fn)
 
