@@ -228,4 +228,45 @@ describe('Unions', () => {
     assert.isFalse(validator({ }))
     assert.isFalse(validator([]))
   })
+
+  it('byteprefix', () => {
+    /*
+      type Bls12_381Signature bytes
+
+      type Secp256k1Signature bytes
+
+      type Signature union {
+        | Secp256k1Signature 0
+        | Bls12_381Signature 1
+      } representation byteprefix
+    */
+    const validator = SchemaValidate.create({
+      types: {
+        Bls12_381Signature: { kind: 'bytes' },
+        Secp256k1Signature: { kind: 'bytes' },
+        Signature: {
+          kind: 'union',
+          representation: {
+            byteprefix: {
+              Secp256k1Signature: 0,
+              Bls12_381Signature: 1
+            }
+          }
+        }
+      }
+    }, 'Signature')
+
+    for (const obj of [null, 1.01, -0.1, 101, -101, 'a string', false, true, {}, [], undefined]) {
+      assert.isFalse(validator(obj))
+    }
+
+    assert.isTrue(validator(Uint8Array.from([0, 1, 2, 3])))
+    assert.isTrue(validator(Uint8Array.from([0])))
+    assert.isTrue(validator(Uint8Array.from([1, 1, 2, 3])))
+    assert.isTrue(validator(Uint8Array.from([1])))
+    assert.isFalse(validator(Uint8Array.from([2, 1, 2, 3])))
+    assert.isFalse(validator(Uint8Array.from([2])))
+    assert.isFalse(validator(Uint8Array.from([0xff, 1, 2, 3])))
+    assert.isFalse(validator(Uint8Array.from([0xff])))
+  })
 })

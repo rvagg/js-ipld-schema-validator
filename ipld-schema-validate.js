@@ -248,10 +248,23 @@ function create (schema, root) {
         return
       }
 
+      if (typeof typeDef.representation.byteprefix === 'object') {
+        const bytes = Object.values(typeDef.representation.byteprefix)
+        for (const byte of bytes) {
+          if (!Number.isInteger(byte) || byte < 0 || byte > 0xff) {
+            throw new Error(`Invalid byteprefix byte for "${typeName}": "${byte}"`)
+          }
+        }
+
+        typeValidators[typeName] = `return Kinds.Bytes(obj) && obj.length >= 1 && ${JSON.stringify(bytes)}.includes(obj[0])`
+
+        return
+      }
+
       throw new Error(`Unsupported union type for "${typeName}": "${Object.keys(typeDef.representation).join(',')}"`)
-    } else {
-      throw new Error(`Can't deal with type kind: "${typeDef.kind}"`)
     }
+
+    throw new Error(`Can't deal with type kind: "${typeDef.kind}"`)
   }
 
   addType(root)
