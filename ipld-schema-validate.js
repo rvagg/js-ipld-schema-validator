@@ -17,12 +17,14 @@ const Kinds = {
   Map: (obj) => !Kinds.Null(obj) && typeof obj === "object" && obj["asCID"] !== obj && !Kinds.List(obj) && !Kinds.Bytes(obj)
 }`
 
+function tc (s) { return s.charAt(0).toUpperCase() + s.substring(1) }
+
 function kindDefn (obj) {
   if (typeof obj === 'string' && ScalarKindNames.includes(obj)) {
     return obj
   }
   if (typeof obj === 'object' && typeof obj.kind === 'string' && ScalarKindNamesLower.includes(obj.kind)) {
-    return obj.kind.charAt(0).toUpperCase() + obj.kind.substring(1)
+    return tc(obj.kind)
   }
   return null
 }
@@ -32,7 +34,7 @@ function create (schema, root) {
     throw new TypeError('A root is required')
   }
 
-  // TODO: wind this back to the scalar kinds only, you shouldn't be able to 'Map' and 'List'
+  // shortcut for simple kind
   const rootKind = kindDefn(root)
   if (rootKind) {
     return new Function('obj', `${KindsDefn}; return Kinds.${rootKind}(obj)`)
@@ -54,6 +56,12 @@ function create (schema, root) {
         throw new TypeError(`A type must match an existing type definition ("${typeName}")`)
       }
       typeDef = schema.types[typeName]
+    }
+
+    const typeKind = kindDefn(typeDef)
+    if (typeKind) {
+      typeValidators[typeName] = `return Kinds.${typeKind}(obj)`
+      return
     }
 
     const defineType = (defType, name) => {
@@ -85,7 +93,11 @@ function create (schema, root) {
         valueValidator = `(v) => v === null || ${valueValidator}(v)`
       }
       typeValidators[typeName] = `return Kinds.List(obj) && Array.prototype.every.call(obj, ${valueValidator})`
-    } else if (typeDef.kind === 'map') {
+
+      return
+    }
+
+    if (typeDef.kind === 'map') {
       if (typeDef.keyType !== 'String') {
         throw new Error(`Invalid keyType for Map "${typeName}", expected String, found "${typeDef.keyType}"`)
       }
@@ -101,7 +113,11 @@ function create (schema, root) {
         valueValidator = `(v) => v === null || ${valueValidator}(v)`
       }
       typeValidators[typeName] = `return Kinds.Map(obj) && Array.prototype.every.call(Object.values(obj), ${valueValidator})`
-    } else if (typeDef.kind === 'struct') {
+
+      return
+    }
+
+    if (typeDef.kind === 'struct') {
       let representation = 'map'
       if (typeDef.representation) {
         if (typeof typeDef.representation.tuple === 'object') {
@@ -142,6 +158,54 @@ function create (schema, root) {
       } else {
         typeValidators[typeName] = `const keys = obj && Object.keys(obj); return Kinds.Map(obj) && ${JSON.stringify(requiredFields)}.every((k) => keys.includes(k)) && Object.entries(obj).every(([name, value]) => Types["${typeName} -> " + name] && Types["${typeName} -> " + name](value))`
       }
+
+      return
+    }
+
+    if (typeDef.kind === 'union') {
+      if (typeof typeDef.representation !== 'object') {
+        throw new Error(`Bad union definition for "${typeName}`)
+      }
+      if (typeof typeDef.representation.keyed === 'object') {
+        const keys = typeDef.representation.keyed
+        const validators = Object.entries(keys).map(([key, innerTypeName]) => {
+          if (typeof innerTypeName !== 'string') {
+            throw new Error(`Keyed union "${typeName} refers to non-string type name: "${innerTypeName}"`)
+          }
+          let validator
+          if (ScalarKindNames.includes(innerTypeName)) {
+            validator = `Kinds.${innerTypeName}`
+          } else {
+            addType(innerTypeName)
+            validator = `Types["${innerTypeName}"]`
+          }
+          return `(keys[0] === "${key}" && ${validator}(obj["${key}"]))`
+        })
+        typeValidators[typeName] = `const keys = obj && Object.keys(obj); return Kinds.Map(obj) && keys.length === 1 && ${JSON.stringify(Object.keys(keys))}.includes(keys[0]) && (${validators.join(' || ')})`
+
+        return
+      }
+
+      if (typeof typeDef.representation.kinded === 'object') {
+        const kinds = typeDef.representation.kinded
+        const validators = Object.entries(kinds).map(([kind, innerTypeName]) => {
+          console.log('kind', kind, '->', innerTypeName)
+          if (typeof innerTypeName !== 'string') {
+            throw new Error(`Kinded union "${typeName} refers to non-string type name: "${innerTypeName}"`)
+          }
+          addType(innerTypeName)
+          // the Kinds.X(obj) prefix here results in a double-check in practice once we go into Types["Y"],
+          // because we should be able to presume that the type in question will do a kind check of its own.
+          // _But_, it makes sure that a broken schema that uses a bad kind discriminator will properly fail
+          // instead of erroneously passing
+          return `(Kinds.${tc(kind)}(obj) && Types["${innerTypeName}"](obj))`
+        })
+        typeValidators[typeName] = `return ${validators.join(' || ')}`
+
+        return
+      }
+
+      throw new Error(`Unsupported union type for "${typeName}": "${Object.keys(typeDef.representation).join(',')}"`)
     } else {
       throw new Error(`Can't deal with type kind: "${typeDef.kind}"`)
     }
