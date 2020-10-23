@@ -225,6 +225,29 @@ function create (schema, root) {
         return
       }
 
+      if (typeof typeDef.representation.envelope === 'object') {
+        const envelope = typeDef.representation.envelope
+        if (typeof envelope.discriminantKey !== 'string') {
+          throw new Error(`Expected "discriminantKey" for envelope union "${typeName}"`)
+        }
+        if (typeof envelope.contentKey !== 'string') {
+          throw new Error(`Expected "contentKey" for envelope union "${typeName}"`)
+        }
+        if (typeof envelope.discriminantTable !== 'object') {
+          throw new Error(`Expected "discriminantTable" for envelope union "${typeName}"`)
+        }
+        const validators = Object.entries(envelope.discriminantTable).map(([key, innerTypeName]) => {
+          if (typeof innerTypeName !== 'string') {
+            throw new Error(`Inline union "${typeName} refers to non-string type name: "${innerTypeName}"`)
+          }
+          addType(innerTypeName)
+          return `(key === "${key}" && Types["${innerTypeName}"](content))`
+        })
+        typeValidators[typeName] = `const key = obj && obj["${envelope.discriminantKey}"]; const content = obj && obj["${envelope.contentKey}"]; return Kinds.Map(obj) && Kinds.String(key) && content !== undefined && (${validators.join(' || ')})`
+
+        return
+      }
+
       throw new Error(`Unsupported union type for "${typeName}": "${Object.keys(typeDef.representation).join(',')}"`)
     } else {
       throw new Error(`Can't deal with type kind: "${typeDef.kind}"`)

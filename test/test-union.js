@@ -172,4 +172,60 @@ describe('Unions', () => {
     assert.isFalse(validator({ tag: 'bar', froz: true }))
     assert.isFalse(validator({ tag: 'foo', froz: 'zot' }))
   })
+
+  it('envelope', () => {
+    /*
+      type Bar bool
+
+      type Baz string
+
+      type Foo int
+
+      type UnionEnvelope union {
+        | Foo "foo"
+        | Bar "bar"
+        | Baz "baz"
+      } representation envelope {
+        discriminantKey "bim"
+        contentKey "bam"
+      }
+    */
+    const validator = SchemaValidate.create({
+      types: {
+        Bar: { kind: 'bool' },
+        Baz: { kind: 'string' },
+        Foo: { kind: 'int' },
+        UnionEnvelope: {
+          kind: 'union',
+          representation: {
+            envelope: {
+              discriminantKey: 'bim',
+              contentKey: 'bam',
+              discriminantTable: {
+                foo: 'Foo',
+                bar: 'Bar',
+                baz: 'Baz'
+              }
+            }
+          }
+        }
+      }
+    }, 'UnionEnvelope')
+
+    assert.isTrue(validator({ bim: 'foo', bam: 100 }))
+    assert.isTrue(validator({ bim: 'bar', bam: true }))
+    assert.isTrue(validator({ bim: 'baz', bam: 'here be baz' }))
+
+    assert.isFalse(validator({ bim: 'foo' }))
+    assert.isFalse(validator({ bim: 'bar' }))
+    assert.isFalse(validator({ bim: 'baz' }))
+    assert.isFalse(validator({ bim: 'foo', bam: 'zot' }))
+    assert.isFalse(validator({ bim: 'bar', bam: 100 }))
+    assert.isFalse(validator({ bim: 'baz', bam: true }))
+    assert.isFalse(validator(100))
+    assert.isFalse(validator(true))
+    assert.isFalse(validator('here be string'))
+    assert.isFalse(validator({ }))
+    assert.isFalse(validator([]))
+  })
 })
