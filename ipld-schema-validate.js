@@ -130,21 +130,23 @@ function create (schema, root) {
         throw new Error(`Unsupported representation parameters for "${typeName}"`)
       }
 
-      const toFieldName = (fieldName) => {
-        if (typeof typeDef.representation.map === 'object' &&
-            typeof typeDef.representation.map.fields === 'object' &&
-            typeof typeDef.representation.map.fields[fieldName] === 'object' &&
-            typeof typeDef.representation.map.fields[fieldName].rename === 'string') {
-          return typeDef.representation.map.fields[fieldName].rename
-        }
-        return fieldName
-      }
-
       const requiredFields = []
       for (let [fieldName, fieldDef] of Object.entries(typeDef.fields)) {
-        fieldName = toFieldName(fieldName)
+        let required = representation !== 'map' || fieldDef.optional !== true
+
+        if (typeof typeDef.representation.map === 'object' &&
+            typeof typeDef.representation.map.fields === 'object' &&
+            typeof typeDef.representation.map.fields[fieldName] === 'object') {
+          if (typeDef.representation.map.fields[fieldName].implicit !== undefined) {
+            required = false
+          }
+          if (typeof typeDef.representation.map.fields[fieldName].rename === 'string') {
+            fieldName = typeDef.representation.map.fields[fieldName].rename
+          }
+        }
+
         const fieldKey = `${typeName} > ${fieldName}`
-        if (representation !== 'map' || fieldDef.optional !== true) {
+        if (required) {
           requiredFields.push(fieldName)
         }
         if (representation !== 'map' && fieldDef.optional === true) {

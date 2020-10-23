@@ -416,4 +416,43 @@ describe('Structs', () => {
     assert.isFalse(validator({ bar: true, boom: 'str', baz: 'str', b: 'str', z: 'str', f: 100, foo: 100 }))
     assert.isTrue(validator({ b: true, boom: 'str', z: 'str', f: 100 }))
   })
+
+  it('empty struct', () => {
+    /*
+      type StructAsMapWithImplicits struct {
+        bar Bool (implicit "false")
+        boom String (implicit "yay")
+        baz String
+        foo Int (implicit "0")
+      }
+    */
+    const validator = SchemaValidate.create({
+      types: {
+        StructAsMapWithImplicits: {
+          kind: 'struct',
+          fields: {
+            bar: { type: 'Bool' },
+            boom: { type: 'String' },
+            baz: { type: 'String' },
+            foo: { type: 'Int' }
+          },
+          representation: {
+            map: {
+              fields: {
+                bar: { implicit: false },
+                boom: { implicit: 'yay' },
+                foo: { implicit: '0' }
+              }
+            }
+          }
+        }
+      }
+    }, 'StructAsMapWithImplicits')
+
+    assert.isTrue(validator({ bar: true, boom: 'str', baz: 'str', foo: 100 }))
+    assert.isTrue(validator({ boom: 'str', baz: 'str', foo: 100 }))
+    assert.isTrue(validator({ baz: 'str', foo: 100 }))
+    assert.isTrue(validator({ baz: 'str' }))
+    assert.isFalse(validator({}))
+  })
 })
