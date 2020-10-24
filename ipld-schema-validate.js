@@ -306,6 +306,30 @@ function create (schema, root) {
       throw new Error(`Unsupported union type for "${typeName}": "${Object.keys(typeDef.representation).join(',')}"`)
     }
 
+    if (typeDef.kind === 'enum') {
+      if (typeof typeDef.members !== 'object') {
+        throw new Error('Enum needs a "members" list')
+      }
+      let renames = {}
+      let representation = 'string'
+      if (typeof typeDef.representation === 'object') {
+        if (typeof typeDef.representation.string === 'object') {
+          renames = typeDef.representation.string
+        } else if (typeof typeDef.representation.int === 'object') {
+          renames = typeDef.representation.int
+          representation = 'int'
+        }
+      }
+      const values = Object.keys(typeDef.members).map((v) => renames[v] !== undefined ? renames[v] : v)
+      if (values.some((v) => representation === 'string' ? typeof v !== 'string' : !Number.isInteger(v))) {
+        console.log(values, values.map((v) => typeof v))
+        throw new Error(`Enum members must be ${representation}s`)
+      }
+      typeValidators[typeName] = `(obj) => Kinds.${tc(representation)}(obj) && ${JSON.stringify(values)}.includes(obj)`
+
+      return
+    }
+
     throw new Error(`Can't deal with type kind: "${typeDef.kind}"`)
   }
 
