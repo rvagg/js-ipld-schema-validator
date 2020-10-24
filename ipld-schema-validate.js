@@ -21,6 +21,19 @@ const implicits = ScalarKindNames.reduce((p, c) => {
   return p
 }, {})
 
+implicits.AnyScalar = {
+  kind: 'union',
+  representation: {
+    kinded: {
+      bool: 'Bool',
+      string: 'String',
+      bytes: 'Bytes',
+      int: 'Int',
+      float: 'Float'
+    }
+  }
+}
+
 function tc (s) { return s.charAt(0).toUpperCase() + s.substring(1) }
 
 function create (schema, root) {
