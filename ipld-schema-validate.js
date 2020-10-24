@@ -1,8 +1,5 @@
 /* eslint-disable no-new-func */
 
-const ScalarKindNames = ['Null', 'Int', 'Float', 'String', 'Bool', 'Bytes', 'Link']
-const ScalarKindNamesLower = ScalarKindNames.map((n) => n.toLowerCase())
-
 const KindsDefn = `
 const Kinds = {
   Null: (obj) => obj === null,
@@ -15,6 +12,9 @@ const Kinds = {
   List: (obj) => Array.isArray(obj),
   Map: (obj) => !Kinds.Null(obj) && typeof obj === "object" && obj["asCID"] !== obj && !Kinds.List(obj) && !Kinds.Bytes(obj)
 }`
+
+const ScalarKindNames = ['Null', 'Int', 'Float', 'String', 'Bool', 'Bytes', 'Link']
+const ScalarKindNamesLower = ScalarKindNames.map((n) => n.toLowerCase())
 
 const implicits = ScalarKindNames.reduce((p, c) => {
   p[c] = { kind: c.toLowerCase() }
@@ -30,6 +30,31 @@ implicits.AnyScalar = {
       bytes: 'Bytes',
       int: 'Int',
       float: 'Float'
+    }
+  }
+}
+implicits.AnyMap = {
+  kind: 'map',
+  keyType: 'String',
+  valueType: 'Any'
+}
+implicits.AnyList = {
+  kind: 'list',
+  valueType: 'Any'
+}
+implicits.Any = {
+  kind: 'union',
+  representation: {
+    kinded: {
+      bool: 'Bool',
+      string: 'String',
+      bytes: 'Bytes',
+      int: 'Int',
+      float: 'Float',
+      null: 'Null',
+      link: 'Link',
+      map: 'AnyMap',
+      list: 'AnyList'
     }
   }
 }
@@ -55,6 +80,12 @@ function create (schema, root) {
   const addType = (typeName, typeDef) => {
     if (typeValidators[typeName]) { // already added this one
       return
+    }
+
+    if (typeName === 'Any') {
+      // special case for Any because it's a recursive definition, so we set up a dummy in place so
+      // any recursive attempt to add finds a definition before it's set
+      typeValidators[typeName] = '() => false'
     }
 
     if (!typeDef) {
