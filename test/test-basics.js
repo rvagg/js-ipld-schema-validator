@@ -1,6 +1,6 @@
 /* eslint-env mocha */
 
-import SchemaValidate from 'ipld-schema-validate'
+import SchemaValidator from 'ipld-schema-validator'
 import chai from 'chai'
 
 const { assert } = chai
@@ -10,7 +10,7 @@ fauxCid.asCID = fauxCid
 
 describe('Base kinds', () => {
   it('null', () => {
-    const validator = SchemaValidate.create({ types: {} }, 'Null')
+    const validator = SchemaValidator.create({ types: {} }, 'Null')
     for (const obj of [101, 1.01, 'a string', false, true, fauxCid, Uint8Array.from([1, 2, 3]), [1, 2, 3], { obj: 'nope' }, undefined]) {
       assert.isFalse(validator(obj), `obj: ${obj} != 'null'`)
     }
@@ -18,7 +18,7 @@ describe('Base kinds', () => {
   })
 
   it('int', () => {
-    const validator = SchemaValidate.create({ types: {} }, 'Int')
+    const validator = SchemaValidator.create({ types: {} }, 'Int')
     for (const obj of [null, 1.01, -0.1, 'a string', false, true, fauxCid, Uint8Array.from([1, 2, 3]), [1, 2, 3], { obj: 'nope' }, undefined]) {
       assert.isFalse(validator(obj), `obj: ${obj} != 'int'`)
     }
@@ -28,7 +28,7 @@ describe('Base kinds', () => {
   })
 
   it('float', () => {
-    const validator = SchemaValidate.create({ types: {} }, 'Float')
+    const validator = SchemaValidator.create({ types: {} }, 'Float')
     for (const obj of [null, 101, -101, 'a string', false, true, fauxCid, Uint8Array.from([1, 2, 3]), [1, 2, 3], { obj: 'nope' }, undefined]) {
       assert.isFalse(validator(obj), `obj: ${obj} != 'float'`)
     }
@@ -37,7 +37,7 @@ describe('Base kinds', () => {
   })
 
   it('string', () => {
-    const validator = SchemaValidate.create({ types: {} }, 'String')
+    const validator = SchemaValidator.create({ types: {} }, 'String')
     for (const obj of [null, 1.01, -0.1, 101, -101, false, true, fauxCid, Uint8Array.from([1, 2, 3]), [1, 2, 3], { obj: 'nope' }, undefined]) {
       assert.isFalse(validator(obj), `obj: ${obj} != 'string'`)
     }
@@ -46,7 +46,7 @@ describe('Base kinds', () => {
   })
 
   it('bool', () => {
-    const validator = SchemaValidate.create({ types: {} }, 'Bool')
+    const validator = SchemaValidator.create({ types: {} }, 'Bool')
     for (const obj of [null, 1.01, -0.1, 101, -101, 'a string', fauxCid, Uint8Array.from([1, 2, 3]), [1, 2, 3], { obj: 'nope' }, undefined]) {
       assert.isFalse(validator(obj), `obj: ${obj} != 'bool'`)
     }
@@ -55,7 +55,7 @@ describe('Base kinds', () => {
   })
 
   it('bytes', () => {
-    const validator = SchemaValidate.create({ types: {} }, 'Bytes')
+    const validator = SchemaValidator.create({ types: {} }, 'Bytes')
     for (const obj of [null, 1.01, -0.1, 101, -101, 'a string', false, true, fauxCid, [1, 2, 3], { obj: 'nope' }, undefined]) {
       assert.isFalse(validator(obj), `obj: ${obj} != 'bytes'`)
     }
@@ -64,7 +64,7 @@ describe('Base kinds', () => {
   })
 
   it('link', () => {
-    const validator = SchemaValidate.create({ types: {} }, 'Link')
+    const validator = SchemaValidator.create({ types: {} }, 'Link')
     for (const obj of [null, 1.01, -0.1, 101, -101, 'a string', false, true, new Uint8Array(0), Uint8Array.from([1, 2, 3]), [1, 2, 3], { obj: 'nope' }, undefined]) {
       assert.isFalse(validator(obj), `obj: ${obj} != 'link'`)
     }
@@ -73,7 +73,7 @@ describe('Base kinds', () => {
 
   /* can't use recursive kind names
   it('list', () => {
-    const validator = SchemaValidate.create({ types: {} }, 'List')
+    const validator = SchemaValidator.create({ types: {} }, 'List')
     for (const obj of [null, 1.01, -0.1, 101, -101, 'a string', false, true, fauxCid, new Uint8Array(0), Uint8Array.from([1, 2, 3]), { obj: 'nope' }, undefined]) {
       assert.isFalse(validator(obj), `obj: ${obj} != 'list'`)
     }
@@ -83,7 +83,7 @@ describe('Base kinds', () => {
   })
 
   it('map', () => {
-    const validator = SchemaValidate.create({ types: {} }, 'Map')
+    const validator = SchemaValidator.create({ types: {} }, 'Map')
     for (const obj of [null, 1.01, -0.1, 101, -101, 'a string', false, true, fauxCid, new Uint8Array(0), Uint8Array.from([1, 2, 3]), [1, 2, 3], undefined]) {
       assert.isFalse(validator(obj), `obj: ${obj} != 'map'`)
     }
@@ -96,7 +96,7 @@ describe('Base kinds', () => {
 
 describe('List types', () => {
   it('[String:String]', () => {
-    const validator = SchemaValidate.create({
+    const validator = SchemaValidator.create({
       types: {
         $list: {
           kind: 'list',
@@ -118,7 +118,7 @@ describe('List types', () => {
   })
 
   it('[String:Int]', () => {
-    const validator = SchemaValidate.create({
+    const validator = SchemaValidator.create({
       types: {
         $list: {
           kind: 'list',
@@ -140,7 +140,7 @@ describe('List types', () => {
   })
 
   it('[String:nullable String]', () => {
-    const validator = SchemaValidate.create({
+    const validator = SchemaValidator.create({
       types: {
         $list: {
           kind: 'list',
@@ -166,7 +166,7 @@ describe('List types', () => {
   })
 
   it('[String:&Any]', () => {
-    const validator = SchemaValidate.create({
+    const validator = SchemaValidator.create({
       types: {
         $list: {
           kind: 'list',
@@ -190,7 +190,7 @@ describe('List types', () => {
 
 describe('Map types', () => {
   it('{String:String}', () => {
-    const validator = SchemaValidate.create({
+    const validator = SchemaValidator.create({
       types: {
         $map: {
           kind: 'map',
@@ -214,7 +214,7 @@ describe('Map types', () => {
   })
 
   it('{String:Int}', () => {
-    const validator = SchemaValidate.create({
+    const validator = SchemaValidator.create({
       types: {
         $map: {
           kind: 'map',
@@ -238,7 +238,7 @@ describe('Map types', () => {
   })
 
   it('{String:&Any}', () => {
-    const validator = SchemaValidate.create({
+    const validator = SchemaValidator.create({
       types: {
         $map: {
           kind: 'map',
@@ -262,7 +262,7 @@ describe('Map types', () => {
   })
 
   it('{String:nullable Int}', () => {
-    const validator = SchemaValidate.create({
+    const validator = SchemaValidator.create({
       types: {
         $map: {
           kind: 'map',
@@ -292,7 +292,7 @@ describe('Map types', () => {
     /*
       type MapAsListpairs {String:String} representation listpairs
     */
-    const validator = SchemaValidate.create({
+    const validator = SchemaValidator.create({
       types: {
         MapAsListpairs: {
           kind: 'map',

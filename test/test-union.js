@@ -1,6 +1,6 @@
 /* eslint-env mocha */
 
-import SchemaValidate from 'ipld-schema-validate'
+import SchemaValidator from 'ipld-schema-validator'
 import chai from 'chai'
 
 const { assert } = chai
@@ -10,7 +10,7 @@ fauxCid.asCID = fauxCid
 
 describe('Unions', () => {
   it('keyed', () => {
-    const validator = SchemaValidate.create({
+    const validator = SchemaValidator.create({
       types: {
         UnionKeyed: {
           kind: 'union',
@@ -35,7 +35,7 @@ describe('Unions', () => {
   })
 
   it('kinded', () => {
-    const validator = SchemaValidate.create({
+    const validator = SchemaValidator.create({
       types: {
         Bar: { kind: 'bool' },
         Baz: { kind: 'string' },
@@ -67,7 +67,7 @@ describe('Unions', () => {
   })
 
   it('kinded complex', () => {
-    const validator = SchemaValidate.create({
+    const validator = SchemaValidator.create({
       types: {
         $list: {
           kind: 'list',
@@ -125,7 +125,7 @@ describe('Unions', () => {
         discriminantKey "tag"
       }
     */
-    const validator = SchemaValidate.create({
+    const validator = SchemaValidator.create({
       types: {
         UnionInline: {
           kind: 'union',
@@ -190,7 +190,7 @@ describe('Unions', () => {
         contentKey "bam"
       }
     */
-    const validator = SchemaValidate.create({
+    const validator = SchemaValidator.create({
       types: {
         Bar: { kind: 'bool' },
         Baz: { kind: 'string' },
@@ -240,7 +240,7 @@ describe('Unions', () => {
         | Bls12_381Signature 1
       } representation byteprefix
     */
-    const validator = SchemaValidate.create({
+    const validator = SchemaValidator.create({
       types: {
         Bls12_381Signature: { kind: 'bytes' },
         Secp256k1Signature: { kind: 'bytes' },

@@ -1,22 +1,25 @@
 {
-  "name": "ipld-schema-validate",
+  "name": "ipld-schema-validator",
   "version": "0.0.0",
   "description": "IPLD Schema Validator",
-  "main": "ipld-schema-validate.js",
+  "main": "ipld-schema-validator.js",
   "type": "module",
   "scripts": {
-    "test": "npm run lint && mocha test/test-*.js",
-		"coverage": "hundreds mocha test/test-*.js",
-    "lint": "standard"
+    "lint": "standard",
+    "build": "npm_config_yes=true npx ipjs@latest build --tests",
+    "publish": "npm_config_yes=true npx ipjs@latest publish",
+    "test:cjs": "npm run build && mocha dist/cjs/node-test/test-*.js",
+    "test:node": "hundreds mocha test/test-*.js",
+    "test:browser": "polendina --cleanup dist/cjs/node-test/test-*.js",
+    "test": "npm run lint && npm run test:node && npm run test:cjs && npm run test:browser",
+    "coverage": "c8 --reporter=html mocha test/test-*.js && npx st -d coverage -p 8080"
   },
   "exports": {
-    ".": {
-      "import": "./ipld-schema-validate.js"
-    }
+    "import": "./ipld-schema-validator.js"
   },
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@github.com/rvagg/js-ipld-schema-validate.git"
+    "url": "git+ssh://git@github.com/rvagg/js-ipld-schema-validator.git"
   },
   "keywords": [
     "IPLD",
@@ -25,13 +28,15 @@
   "author": "Rod <rod@vagg.org> (http://r.va.gg/)",
   "license": "Apache-2.0",
   "bugs": {
-    "url": "https://github.com/rvagg/js-ipld-schema-validate/issues"
+    "url": "https://github.com/rvagg/js-ipld-schema-validator/issues"
   },
-  "homepage": "https://github.com/rvagg/js-ipld-schema-validate#readme",
+  "homepage": "https://github.com/rvagg/js-ipld-schema-validator#readme",
   "devDependencies": {
+    "c8": "^7.3.4",
     "chai": "^4.2.0",
     "hundreds": "^0.0.9",
     "mocha": "^8.2.0",
+    "polendina": "^1.1.0",
     "standard": "^15.0.0"
   }
 }

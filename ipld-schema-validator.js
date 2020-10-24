@@ -111,7 +111,7 @@ function create (schema, root) {
       } else if (typeof innerTypeName === 'string') {
         addType(innerTypeName)
       } else {
-        throw new Error(`Bad field type for "${typeName}": "${name}"`)
+        throw new Error(`Bad type for "${name}" in "${typeName}"`)
       }
       return innerTypeName
     }
@@ -163,7 +163,7 @@ function create (schema, root) {
         if (typeof typeDef.representation.tuple === 'object') {
           representation = 'tuple'
         } else if (typeof typeDef.representation.map !== 'object') {
-          throw new Error(`Unsupported struct representation "${Object.keys(typeDef.representation).join(',')}"`)
+          throw new Error(`Unsupported struct representation for "${typeName}": "${Object.keys(typeDef.representation).join(',')}"`)
         }
       }
 
@@ -187,7 +187,7 @@ function create (schema, root) {
           requiredFields.push(fieldName)
         }
         if (representation !== 'map' && fieldDef.optional === true) {
-          throw new Error('Don\'t support "optional" fields for non-map structs')
+          throw new Error(`Struct "${typeName}" includes "optional" fields for non-map struct`)
         }
         const fieldTypeName = defineType(fieldDef.type, fieldName)
         let fieldValidator = `Types["${fieldTypeName}"](obj)`
@@ -211,14 +211,14 @@ function create (schema, root) {
 
     if (typeDef.kind === 'union') {
       if (typeof typeDef.representation !== 'object') {
-        throw new Error(`Bad union definition for "${typeName}`)
+        throw new Error(`Bad union definition for "${typeName}"`)
       }
 
       if (typeof typeDef.representation.keyed === 'object') {
         const keys = typeDef.representation.keyed
         const validators = Object.entries(keys).map(([key, innerTypeName]) => {
           if (typeof innerTypeName !== 'string') {
-            throw new Error(`Keyed union "${typeName} refers to non-string type name: "${innerTypeName}"`)
+            throw new Error(`Keyed union "${typeName} refers to non-string type name: ${JSON.stringify(innerTypeName)}`)
           }
           addType(innerTypeName)
           const validator = `Types["${innerTypeName}"]`
@@ -233,7 +233,7 @@ function create (schema, root) {
         const kinds = typeDef.representation.kinded
         const validators = Object.entries(kinds).map(([kind, innerTypeName]) => {
           if (typeof innerTypeName !== 'string') {
-            throw new Error(`Kinded union "${typeName} refers to non-string type name: "${innerTypeName}"`)
+            throw new Error(`Kinded union "${typeName} refers to non-string type name: ${JSON.stringify(innerTypeName)}`)
           }
           addType(innerTypeName)
           // the Kinds.X(obj) prefix here results in a double-check in practice once we go into Types["Y"],
@@ -257,7 +257,7 @@ function create (schema, root) {
         }
         const validators = Object.entries(inline.discriminantTable).map(([key, innerTypeName]) => {
           if (typeof innerTypeName !== 'string') {
-            throw new Error(`Inline union "${typeName} refers to non-string type name: "${innerTypeName}"`)
+            throw new Error(`Inline union "${typeName} refers to non-string type name: ${JSON.stringify(innerTypeName)}`)
           }
           addType(innerTypeName)
           return `(key === "${key}" && Types["${innerTypeName}"](obj))`
@@ -280,7 +280,7 @@ function create (schema, root) {
         }
         const validators = Object.entries(envelope.discriminantTable).map(([key, innerTypeName]) => {
           if (typeof innerTypeName !== 'string') {
-            throw new Error(`Inline union "${typeName} refers to non-string type name: "${innerTypeName}"`)
+            throw new Error(`Envelope union "${typeName} refers to non-string type name: ${JSON.stringify(innerTypeName)}`)
           }
           addType(innerTypeName)
           return `(key === "${key}" && Types["${innerTypeName}"](content))`
@@ -322,7 +322,6 @@ function create (schema, root) {
       }
       const values = Object.keys(typeDef.members).map((v) => renames[v] !== undefined ? renames[v] : v)
       if (values.some((v) => representation === 'string' ? typeof v !== 'string' : !Number.isInteger(v))) {
-        console.log(values, values.map((v) => typeof v))
         throw new Error(`Enum members must be ${representation}s`)
       }
       typeValidators[typeName] = `(obj) => Kinds.${tc(representation)}(obj) && ${JSON.stringify(values)}.includes(obj)`

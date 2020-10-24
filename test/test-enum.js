@@ -1,6 +1,6 @@
 /* eslint-env mocha */
 
-import SchemaValidate from 'ipld-schema-validate'
+import SchemaValidator from 'ipld-schema-validator'
 import chai from 'chai'
 
 const { assert } = chai
@@ -10,7 +10,7 @@ fauxCid.asCID = fauxCid
 
 describe('Enums', () => {
   it('string', () => {
-    const validator = SchemaValidate.create({
+    const validator = SchemaValidator.create({
       types: {
         SimpleEnum: {
           kind: 'enum',
@@ -35,7 +35,7 @@ describe('Enums', () => {
   })
 
   it('string renames', () => {
-    const validator = SchemaValidate.create({
+    const validator = SchemaValidator.create({
       types: {
         SimpleEnumWithValues: {
           kind: 'enum',
@@ -67,7 +67,7 @@ describe('Enums', () => {
   })
 
   it('int', () => {
-    const validator = SchemaValidate.create({
+    const validator = SchemaValidator.create({
       types: {
         SimpleEnum: {
           kind: 'enum',

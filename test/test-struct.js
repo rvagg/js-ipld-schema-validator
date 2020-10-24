@@ -1,6 +1,6 @@
 /* eslint-env mocha */
 
-import SchemaValidate from 'ipld-schema-validate'
+import SchemaValidator from 'ipld-schema-validator'
 import chai from 'chai'
 
 const { assert } = chai
@@ -10,7 +10,7 @@ fauxCid.asCID = fauxCid
 
 describe('Structs', () => {
   it('struct with 3 different field kinds', () => {
-    const validator = SchemaValidate.create({
+    const validator = SchemaValidator.create({
       types: {
         SimpleStruct: {
           kind: 'struct',
@@ -33,7 +33,7 @@ describe('Structs', () => {
   })
 
   it('struct within a struct', () => {
-    const validator = SchemaValidate.create({
+    const validator = SchemaValidator.create({
       types: {
         $struct2: {
           kind: 'struct',
@@ -79,7 +79,7 @@ describe('Structs', () => {
       three &Any
     }
     */
-    const validator = SchemaValidate.create({
+    const validator = SchemaValidator.create({
       types: {
         $list: {
           kind: 'list',
@@ -130,7 +130,7 @@ describe('Structs', () => {
   })
 
   it('struct with tuple representation', () => {
-    const validator = SchemaValidate.create({
+    const validator = SchemaValidator.create({
       types: {
         SimpleStruct: {
           kind: 'struct',
@@ -157,7 +157,7 @@ describe('Structs', () => {
   })
 
   it('struct with tuple representation containing structs', () => {
-    const validator = SchemaValidate.create({
+    const validator = SchemaValidator.create({
       types: {
         $struct: {
           kind: 'struct',
@@ -184,7 +184,7 @@ describe('Structs', () => {
   })
 
   it('struct nullables', () => {
-    const validator = SchemaValidate.create({
+    const validator = SchemaValidator.create({
       types: {
         SimpleStruct: {
           kind: 'struct',
@@ -212,7 +212,7 @@ describe('Structs', () => {
   })
 
   it('struct tuple nullables', () => {
-    const validator = SchemaValidate.create({
+    const validator = SchemaValidator.create({
       types: {
         SimpleStruct: {
           kind: 'struct',
@@ -240,7 +240,7 @@ describe('Structs', () => {
   })
 
   it('struct optionals', () => {
-    const validator = SchemaValidate.create({
+    const validator = SchemaValidator.create({
       types: {
         SimpleStruct: {
           kind: 'struct',
@@ -259,7 +259,7 @@ describe('Structs', () => {
     assert.isFalse(validator({ foo: 100, baz: 'this is baz' }))
     assert.isTrue(validator({ bar: true, baz: 'this is baz' }))
     assert.isFalse(validator({ foo: 100, bar: true, baz: 'this is baz', nope: 1 }))
-    assert.isFalse(validator({ foo: undefined, bar: true, baz: '' })) // the next 3 don't validate because 'undefined' isn't in the data model
+    assert.isFalse(validator({ foo: undefined, bar: true, baz: '' })) // the next 3 don't validator because 'undefined' isn't in the data model
     assert.isFalse(validator({ foo: 1, bar: true, baz: undefined }))
     assert.isFalse(validator({ foo: undefined, bar: true, baz: undefined }))
     assert.isTrue(validator({ bar: true, baz: '' }))
@@ -276,7 +276,7 @@ describe('Structs', () => {
         wozField {String:[nullable String]}
       }
     */
-    const validator = SchemaValidate.create({
+    const validator = SchemaValidator.create({
       types: {
         StructWithAnonymousTypes: {
           kind: 'struct',
@@ -362,7 +362,7 @@ describe('Structs', () => {
   })
 
   it('empty struct', () => {
-    const validator = SchemaValidate.create({
+    const validator = SchemaValidator.create({
       types: {
         StructEmpty: {
           kind: 'struct',
@@ -389,7 +389,7 @@ describe('Structs', () => {
         foo Int (rename "f" implicit "0")
       }
     */
-    const validator = SchemaValidate.create({
+    const validator = SchemaValidator.create({
       types: {
         StructAsMapWithRenames: {
           kind: 'struct',
@@ -426,7 +426,7 @@ describe('Structs', () => {
         foo Int (implicit "0")
       }
     */
-    const validator = SchemaValidate.create({
+    const validator = SchemaValidator.create({
       types: {
         StructAsMapWithImplicits: {
           kind: 'struct',
@@ -466,7 +466,7 @@ describe('Structs', () => {
         fieldOrder ["baz", "bar", "foo"]
       }
     */
-    const validator = SchemaValidate.create({
+    const validator = SchemaValidator.create({
       types: {
         StructAsTupleWithCustomFieldorder: {
           kind: 'struct',

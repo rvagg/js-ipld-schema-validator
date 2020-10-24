@@ -1,6 +1,6 @@
 /* eslint-env mocha */
 
-import SchemaValidate from 'ipld-schema-validate'
+import SchemaValidator from 'ipld-schema-validator'
 import chai from 'chai'
 
 const { assert } = chai
@@ -10,7 +10,7 @@ fauxCid.asCID = fauxCid
 
 describe('Nested maps and lists', () => {
   it('{String:[&Any]}', () => {
-    const validator = SchemaValidate.create({
+    const validator = SchemaValidator.create({
       types: {
         $list: {
           kind: 'list',
@@ -41,7 +41,7 @@ describe('Nested maps and lists', () => {
   })
 
   it('[{String:Int}]', () => {
-    const validator = SchemaValidate.create({
+    const validator = SchemaValidator.create({
       types: {
         $map: {
           kind: 'map',
