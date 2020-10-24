@@ -38,9 +38,9 @@ describe('Structs', () => {
         $struct2: {
           kind: 'struct',
           fields: {
-            foo: { kind: 'int' },
+            foo: { type: 'Int' },
             bar: { type: 'Bool' },
-            baz: { kind: 'string' }
+            baz: { type: 'String' }
           },
           representation: { map: {} }
         },
@@ -49,7 +49,7 @@ describe('Structs', () => {
           fields: {
             one: { type: 'Int' },
             two: { type: '$struct2' },
-            three: { kind: 'link' }
+            three: { type: 'Link' }
           },
           representation: { map: {} }
         }
@@ -104,7 +104,7 @@ describe('Structs', () => {
           fields: {
             one: { type: '$map' },
             two: { type: '$struct2' },
-            three: { kind: 'link' }
+            three: { type: 'Link' }
           },
           representation: { map: {} }
         }
