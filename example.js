@@ -1,3 +1,10 @@
+// This example requires the dependencies:
+//   - ipld-schema
+//   - ipld-schema-validator
+// And needs to be run as a "module" which either means a package.json with
+//   `"type": "module"`
+// or the file needs to be renamed `example.mjs`.
+
 import Schema from 'ipld-schema'
 import SchemaValidator from 'ipld-schema-validator'
 
