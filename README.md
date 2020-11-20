@@ -62,6 +62,17 @@ Currently **ipld-schema-validator** supports the full IPLD Schema specification 
 * Struct with `stringpairs` representation
 * Struct with `stringjoin` representation
 
+### Floats & Ints
+
+Unfortunately, in JavaScript, an "integer" is really just a floating point number with a `0` after the decimal point (all numbers in JavaScript are IEEE754 double-precision floats). So we have no clean way to say whether a number is strictly an integer and _not_ a "float" in terms of the IPLD Data Model.
+
+This library takes the following approach:
+
+* An "int" is a number that passes the [`Number.isInteger()`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number/isInteger) test.
+* A "float" is a number that is not `Infinity` or `-Infinity`.
+
+Therefore, it is possible for the same number to pass as _both_ an int and a float IPLD kind.
+
 ## License & Copyright
 
 Copyright 2020 Rod Vagg

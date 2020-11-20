@@ -29,11 +29,15 @@ describe('Base kinds', () => {
 
   it('float', () => {
     const validator = SchemaValidator.create({ types: {} }, 'Float')
-    for (const obj of [null, 101, -101, 'a string', false, true, fauxCid, Uint8Array.from([1, 2, 3]), [1, 2, 3], { obj: 'nope' }, undefined]) {
+    for (const obj of [null, 'a string', false, true, fauxCid, Uint8Array.from([1, 2, 3]), [1, 2, 3], { obj: 'nope' }, undefined]) {
       assert.isFalse(validator(obj), `obj: ${obj} != 'float'`)
     }
     assert.isTrue(validator(1.01))
     assert.isTrue(validator(-1.01))
+    // sad, but unavoidable
+    assert.isTrue(validator(0))
+    assert.isTrue(validator(100))
+    assert.isTrue(validator(-100))
   })
 
   it('string', () => {

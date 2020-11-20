@@ -4,7 +4,7 @@ const KindsDefn = `
 const Kinds = {
   Null: (obj) => obj === null,
   Int: (obj) => Number.isInteger(obj),
-  Float: (obj) => typeof obj === "number" && !Kinds.Int(obj),
+  Float: (obj) => typeof obj === "number" && Number.isFinite(obj),
   String: (obj) => typeof obj === "string",
   Bool: (obj) => typeof obj === "boolean",
   Bytes: (obj) => obj instanceof Uint8Array,
