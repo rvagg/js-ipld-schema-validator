@@ -32,11 +32,11 @@
   },
   "homepage": "https://github.com/rvagg/js-ipld-schema-validator#readme",
   "devDependencies": {
-    "c8": "^7.3.4",
+    "c8": "^7.3.5",
     "chai": "^4.2.0",
     "hundreds": "^0.0.9",
-    "mocha": "^8.2.0",
+    "mocha": "^8.2.1",
     "polendina": "^1.1.0",
-    "standard": "^15.0.0"
+    "standard": "^16.0.3"
   }
 }
