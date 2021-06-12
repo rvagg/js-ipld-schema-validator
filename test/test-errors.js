@@ -1,24 +1,24 @@
 /* eslint-env mocha */
 
-import SchemaValidator from 'ipld-schema-validator'
+import { create } from 'ipld-schema-validator'
 import chai from 'chai'
 
 const { assert } = chai
 
 describe('Errors', () => {
   it('invalid schema definition', () => {
-    assert.throws(() => SchemaValidator.create({}, 'blip'), /Invalid schema definition/)
+    assert.throws(() => create({}, 'blip'), /Invalid schema definition/)
   })
 
   it('no root', () => {
-    assert.throws(() => SchemaValidator.create({ types: {} }), /A root is required/)
-    assert.throws(() => SchemaValidator.create({ types: {} }, ''), /A root is required/)
-    assert.throws(() => SchemaValidator.create({ types: {} }, null), /A root is required/)
-    assert.throws(() => SchemaValidator.create({ types: {} }, 100), /A root is required/)
+    assert.throws(() => create({ types: {} }), /A root is required/)
+    assert.throws(() => create({ types: {} }, ''), /A root is required/)
+    assert.throws(() => create({ types: {} }, null), /A root is required/)
+    assert.throws(() => create({ types: {} }, 100), /A root is required/)
   })
 
   it('bad type kind', () => {
-    assert.throws(() => SchemaValidator.create({
+    assert.throws(() => create({
       types: {
         $map: {
           kind: 'blip',
@@ -30,7 +30,7 @@ describe('Errors', () => {
   })
 
   it('recursive map kind', () => {
-    assert.throws(() => SchemaValidator.create({
+    assert.throws(() => create({
       types: {
         $map: {
           kind: 'map',
@@ -42,7 +42,7 @@ describe('Errors', () => {
   })
 
   it('recursive list kind', () => {
-    assert.throws(() => SchemaValidator.create({
+    assert.throws(() => create({
       types: {
         $list: {
           kind: 'list',
@@ -53,7 +53,7 @@ describe('Errors', () => {
   })
 
   it('invalid map keyType', () => {
-    assert.throws(() => SchemaValidator.create({
+    assert.throws(() => create({
       types: {
         $map: {
           kind: 'map',
@@ -65,7 +65,7 @@ describe('Errors', () => {
   })
 
   it('invalid root', () => {
-    assert.throws(() => SchemaValidator.create({
+    assert.throws(() => create({
       types: {
         $list: {
           kind: 'list',
@@ -76,7 +76,7 @@ describe('Errors', () => {
   })
 
   it('invalid reference', () => {
-    assert.throws(() => SchemaValidator.create({
+    assert.throws(() => create({
       types: {
         $list: {
           kind: 'list',
@@ -87,7 +87,7 @@ describe('Errors', () => {
   })
 
   it('bad valueType', () => {
-    assert.throws(() => SchemaValidator.create({
+    assert.throws(() => create({
       types: {
         AMap: {
           kind: 'map',
@@ -98,7 +98,7 @@ describe('Errors', () => {
       }
     }, 'AMap'), /Bad type for "valueType" in "AMap"/)
 
-    assert.throws(() => SchemaValidator.create({
+    assert.throws(() => create({
       types: {
         AList: {
           kind: 'list',
@@ -109,7 +109,7 @@ describe('Errors', () => {
   })
 
   it('bad map representation', () => {
-    assert.throws(() => SchemaValidator.create({
+    assert.throws(() => create({
       types: {
         AMap: {
           kind: 'map',
@@ -122,7 +122,7 @@ describe('Errors', () => {
   })
 
   it('bad struct representation', () => {
-    assert.throws(() => SchemaValidator.create({
+    assert.throws(() => create({
       types: {
         SimpleStruct: {
           kind: 'struct',
@@ -138,7 +138,7 @@ describe('Errors', () => {
   })
 
   it('non-map struct with optionals', () => {
-    assert.throws(() => SchemaValidator.create({
+    assert.throws(() => create({
       types: {
         SimpleStruct: {
           kind: 'struct',
@@ -154,7 +154,7 @@ describe('Errors', () => {
   })
 
   it('bad union', () => {
-    assert.throws(() => SchemaValidator.create({
+    assert.throws(() => create({
       types: {
         UnionUnknown: {
           kind: 'union'
@@ -164,7 +164,7 @@ describe('Errors', () => {
   })
 
   it('bad envelope union', () => {
-    assert.throws(() => SchemaValidator.create({
+    assert.throws(() => create({
       types: {
         UnionInline: {
           kind: 'union',
@@ -191,7 +191,7 @@ describe('Errors', () => {
       }
     }, 'UnionInline'), /Expected "discriminantTable" for inline union "UnionInline"/)
 
-    assert.throws(() => SchemaValidator.create({
+    assert.throws(() => create({
       types: {
         UnionInline: {
           kind: 'union',
@@ -223,7 +223,7 @@ describe('Errors', () => {
   })
 
   it('bad envelope union', () => {
-    assert.throws(() => SchemaValidator.create({
+    assert.throws(() => create({
       types: {
         Bar: { kind: 'bool' },
         Baz: { kind: 'string' },
@@ -240,7 +240,7 @@ describe('Errors', () => {
       }
     }, 'UnionEnvelope'), /Expected "discriminantTable" for envelope union "UnionEnvelope"/)
 
-    assert.throws(() => SchemaValidator.create({
+    assert.throws(() => create({
       types: {
         Bar: { kind: 'bool' },
         Baz: { kind: 'string' },
@@ -261,7 +261,7 @@ describe('Errors', () => {
       }
     }, 'UnionEnvelope'), /Expected "discriminantKey" for envelope union "UnionEnvelope"/)
 
-    assert.throws(() => SchemaValidator.create({
+    assert.throws(() => create({
       types: {
         Bar: { kind: 'bool' },
         Baz: { kind: 'string' },
@@ -284,7 +284,7 @@ describe('Errors', () => {
   })
 
   it('bad union type name', () => {
-    assert.throws(() => SchemaValidator.create({
+    assert.throws(() => create({
       types: {
         Bar: { kind: 'bool' },
         Baz: { kind: 'string' },
@@ -302,7 +302,7 @@ describe('Errors', () => {
       }
     }, 'UnionKinded'), /Kinded union "UnionKinded refers to non-string type name: {}/)
 
-    assert.throws(() => SchemaValidator.create({
+    assert.throws(() => create({
       types: {
         UnionKeyed: {
           kind: 'union',
@@ -317,7 +317,7 @@ describe('Errors', () => {
       }
     }, 'UnionKeyed'), /Keyed union "UnionKeyed refers to non-string type name: \["nope"\]/)
 
-    assert.throws(() => SchemaValidator.create({
+    assert.throws(() => create({
       types: {
         UnionInline: {
           kind: 'union',
@@ -348,7 +348,7 @@ describe('Errors', () => {
       }
     }, 'UnionInline'), /Inline union "UnionInline refers to non-string type name: 100/)
 
-    assert.throws(() => SchemaValidator.create({
+    assert.throws(() => create({
       types: {
         Bar: { kind: 'bool' },
         Baz: { kind: 'string' },
@@ -372,7 +372,7 @@ describe('Errors', () => {
   })
 
   it('bad byteprefix byte', () => {
-    assert.throws(() => SchemaValidator.create({
+    assert.throws(() => create({
       types: {
         Bls12_381Signature: { kind: 'bytes' },
         Secp256k1Signature: { kind: 'bytes' },
@@ -390,7 +390,7 @@ describe('Errors', () => {
   })
 
   it('bad union type', () => {
-    assert.throws(() => SchemaValidator.create({
+    assert.throws(() => create({
       types: {
         UnionKeyed: {
           kind: 'union',
@@ -403,7 +403,7 @@ describe('Errors', () => {
   })
 
   it('bad enum descriptor', () => {
-    assert.throws(() => SchemaValidator.create({
+    assert.throws(() => create({
       types: {
         SimpleEnum: {
           kind: 'enum'
@@ -413,7 +413,7 @@ describe('Errors', () => {
   })
 
   it('bad enum rename values', () => {
-    assert.throws(() => SchemaValidator.create({
+    assert.throws(() => create({
       types: {
         SimpleEnum: {
           kind: 'enum',

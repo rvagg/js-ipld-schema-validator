@@ -5,6 +5,7 @@
 //   `"type": "module"`
 // or the file needs to be renamed `example.mjs`.
 
+// @ts-ignore
 import Schema from 'ipld-schema'
 import SchemaValidator from 'ipld-schema-validator'
 
