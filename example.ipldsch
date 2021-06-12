@@ -1,0 +1,13 @@
+type FooBarBazStruct struct {
+  bim Int
+  bam String
+  boom Bool
+} representation tuple
+
+type MyList [Int]
+
+type MyStruct struct {
+  foo FooBarBazStruct
+  bar MyList
+  baz String
+}

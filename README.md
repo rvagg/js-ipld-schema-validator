@@ -5,8 +5,8 @@ Build fast and strict JavaScript object form validators using [IPLD Schemas](htt
 ## Example
 
 ```js
-import Schema from 'ipld-schema'
-import SchemaValidator from 'ipld-schema-validator'
+import { parse } from 'ipld-schema'
+import { create } from 'ipld-schema-validator'
 
 // Build an IPLD Schema from the text form
 const schemaText = `
@@ -26,11 +26,11 @@ type MyStruct struct {
 `
 
 // Compile it to its object descriptor form which SchemaValidator consumes
-const schemaDescriptor = new Schema(schemaText).descriptor
+const schemaDescriptor = parse(schemaText)
 
 // Create a validator function from the Schema descriptor, with 'MyStruct' as the
 // root type to inspect
-const myStructValidator = SchemaValidator.create(schemaDescriptor, 'MyStruct')
+const myStructValidator = create(schemaDescriptor, 'MyStruct')
 
 // An object that matches our schema
 const obj = {

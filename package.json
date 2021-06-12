@@ -4,18 +4,25 @@
   "description": "IPLD Schema Validator",
   "main": "ipld-schema-validator.js",
   "type": "module",
+  "types": "./types/ipld-schema-validator.d.ts",
   "scripts": {
+    "build": "npm run build:js && npm run build:types",
+    "build:js": "ipjs build --tests --main && npm run build:copy",
+    "build:copy": "cp -a tsconfig.json *.js test/ bin/ dist/",
+    "build:types": "npm run build:copy && cd dist && tsc --build",
+    "prepublishOnly": "npm run build",
     "lint": "standard",
-    "build": "npm_config_yes=true npx ipjs@latest build --tests",
-    "publish": "npm_config_yes=true npx ipjs@latest publish",
     "test:cjs": "npm run build && mocha dist/cjs/node-test/test-*.js",
     "test:node": "c8 --check-coverage --branches 100 --functions 100 --lines 100 mocha test/test-*.js",
     "test:browser": "polendina --cleanup dist/cjs/node-test/test-*.js",
     "test": "npm run lint && npm run test:node && npm run test:cjs && npm run test:browser",
-    "coverage": "c8 --reporter=html mocha test/test-*.js && npx st -d coverage -p 8080"
+    "coverage": "c8 --reporter=html mocha test/test-*.js && npm_config_yes=true npx st -d coverage -p 8080"
   },
   "exports": {
     "import": "./ipld-schema-validator.js"
+  },
+  "bin": {
+    "ipld-schema-validator": "bin/cli.mjs"
   },
   "repository": {
     "type": "git",
@@ -32,10 +39,30 @@
   },
   "homepage": "https://github.com/rvagg/js-ipld-schema-validator#readme",
   "devDependencies": {
-    "c8": "^7.7.3",
-    "chai": "^4.2.0",
-    "mocha": "^8.2.1",
+    "@types/chai": "^4.2.18",
+    "@types/mocha": "^8.2.2",
+    "@types/yargs": "^17.0.0",
+    "c8": "^7.7.2",
+    "chai": "^4.3.4",
+    "hundreds": "^0.0.9",
+    "ipjs": "^5.0.0",
+    "mocha": "^9.0.0",
     "polendina": "^1.1.0",
-    "standard": "^16.0.3"
+    "standard": "^16.0.3",
+    "typescript": "^4.3.2"
+  },
+  "typesVersions": {
+    "*": {
+      "*": [
+        "types/*"
+      ],
+      "types/*": [
+        "types/*"
+      ]
+    }
+  },
+  "dependencies": {
+    "ipld-schema": "^1.0.0",
+    "yargs": "^16.2.0"
   }
 }

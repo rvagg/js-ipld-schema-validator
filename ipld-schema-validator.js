@@ -1,7 +1,17 @@
 /* eslint-disable no-new-func */
 
-const KindsDefn = `
-const Kinds = {
+/**
+ * @typedef {import('ipld-schema/schema-schema').EnumValue} EnumValue
+ * @typedef {import('ipld-schema/schema-schema').KindInt} KindInt
+ * @typedef {import('ipld-schema/schema-schema').KindString} KindString
+ * @typedef {import('ipld-schema/schema-schema').Schema} Schema
+ * @typedef {import('ipld-schema/schema-schema').Type} Type
+ * @typedef {import('ipld-schema/schema-schema').TypeName} TypeName
+ * @typedef {import('ipld-schema/schema-schema').TypeTerm} TypeTerm
+ */
+
+const KindsDefn =
+`const Kinds = {
   Null: (obj) => obj === null,
   Int: (obj) => Number.isInteger(obj),
   Float: (obj) => typeof obj === "number" && Number.isFinite(obj),
@@ -15,13 +25,20 @@ const Kinds = {
 
 const ScalarKindNames = ['Null', 'Int', 'Float', 'String', 'Bool', 'Bytes', 'Link']
 const ScalarKindNamesLower = ScalarKindNames.map((n) => n.toLowerCase())
+// const TypeKindNames = ['string', 'bool', 'bytes', 'int', 'float', 'map', 'list', 'link', 'union', 'struct', 'enum', 'copy']
 
-const implicits = ScalarKindNames.reduce((p, c) => {
-  p[c] = { kind: c.toLowerCase() }
-  return p
-}, {})
+/** @type {{ [ k in string]: Type }} */
+const implicits = {
+  Null: /** @type {TypeNull} */ { kind: 'null' },
+  Int: /** @type {TypeInt} */ { kind: 'int' },
+  Float: /** @type {TypeFloat} */ { kind: 'float' },
+  String: /** @type {TypeString} */ { kind: 'string' },
+  Bool: /** @type {TypeBool} */ { kind: 'bool' },
+  Bytes: /** @type {TypeBytes} */ { kind: 'bytes' },
+  Link: /** @type {TypeLink} */ { kind: 'link' }
+}
 
-implicits.AnyScalar = {
+implicits.AnyScalar = /** @type {TypeUnion} */ {
   kind: 'union',
   representation: {
     kinded: {
@@ -33,16 +50,16 @@ implicits.AnyScalar = {
     }
   }
 }
-implicits.AnyMap = {
+implicits.AnyMap = /** @type {TypeMap} */ {
   kind: 'map',
   keyType: 'String',
   valueType: 'Any'
 }
-implicits.AnyList = {
+implicits.AnyList = /** @type {TypeList} */ {
   kind: 'list',
   valueType: 'Any'
 }
-implicits.Any = {
+implicits.Any = /** @type {TypeUnion} */ {
   kind: 'union',
   representation: {
     kinded: {
@@ -59,57 +76,103 @@ implicits.Any = {
   }
 }
 
-function tc (s) { return s.charAt(0).toUpperCase() + s.substring(1) }
+/**
+ * @param {string} s
+ * @returns {string}
+ */
+function tc (s) {
+  return s.charAt(0).toUpperCase() + s.substring(1)
+}
 
-function create (schema, root) {
+/**
+ * @param {Schema} schema
+ * @param {string} root
+ * @returns {Function}
+ */
+export function create (schema, root) {
   if (!root || typeof root !== 'string') {
     throw new TypeError('A root is required')
   }
 
-  if (!schema || typeof schema.types !== 'object') {
-    throw new TypeError('Invalid schema definition')
+  const builder = new Builder(schema)
+  builder.addType(root)
+
+  let fn = builder.dumpValidators()
+  fn += `return Types["${root}"](obj);`
+  // console.log(fn)
+
+  return new Function('obj', fn)
+}
+
+export class Builder {
+  /**
+   * @param {Schema} schema
+   */
+  constructor (schema) {
+    if (!schema || typeof schema.types !== 'object') {
+      throw new TypeError('Invalid schema definition')
+    }
+
+    // new schema with implicits
+    this.schema = {
+      types: Object.assign({}, implicits, schema.types)
+    }
+
+    /** @type {Record<string, string>} */
+    this.typeValidators = {}
   }
 
-  // new schema with implicits
-  schema = {
-    types: Object.assign({}, implicits, schema.types)
+  dumpValidators () {
+    let fn = `${KindsDefn};\n`
+    fn += `const Types = {\n${Object.entries(this.typeValidators).map(([name, fn]) => `  ["${name}"]: ${fn}`).join(',\n')}\n};\n`
+    return fn
   }
 
-  const typeValidators = {}
-
-  const addType = (typeName, typeDef) => {
-    if (typeValidators[typeName]) { // already added this one
+  /**
+   * @param {TypeName} typeName
+   * @param {Type} [typeDef]
+   * @returns {void}
+   */
+  addType (typeName, typeDef) {
+    if (this.typeValidators[typeName]) { // already added this one
       return
     }
 
     if (typeName === 'Any') {
       // special case for Any because it's a recursive definition, so we set up a dummy in place so
       // any recursive attempt to add finds a definition before it's set
-      typeValidators[typeName] = '() => false'
+      this.typeValidators[typeName] = '() => false'
     }
 
-    if (!typeDef) {
-      if (typeof schema.types[typeName] !== 'object') {
-        throw new TypeError(`A type must match an existing type definition ("${typeName}")`)
-      }
-      typeDef = schema.types[typeName]
+    if (typeDef === undefined && typeName in this.schema.types && typeof this.schema.types[typeName] === 'object') {
+      typeDef = this.schema.types[typeName]
+    }
+    if (typeDef === undefined) {
+      throw new TypeError(`A type must match an existing type definition ("${typeName}")`)
     }
 
-    if (typeof typeDef === 'object' && typeof typeDef.kind === 'string' && ScalarKindNamesLower.includes(typeDef.kind)) {
-      typeValidators[typeName] = `Kinds.${tc(typeDef.kind)}`
+    if (typeof typeDef === 'object' &&
+        typeof typeDef.kind === 'string' &&
+        ScalarKindNamesLower.includes(typeDef.kind)) {
+      this.typeValidators[typeName] = `Kinds.${tc(typeDef.kind)}`
       return
     }
 
+    /**
+     * @param {TypeTerm|string} defType
+     * @param {string} name
+     * @returns {string}
+     */
     const defineType = (defType, name) => {
       if (defType === typeName) {
         throw new Error(`Recursive typedef in type "${typeName}"`)
       }
       let innerTypeName = defType
-      if (typeof innerTypeName === 'object' && defType.kind) { // anonymous inline map or list!
+      if (typeof innerTypeName === 'object' && typeof defType !== 'string' && defType.kind) { // anonymous inline map or list!
         innerTypeName = `${typeName} > ${name} (anon)`
-        addType(innerTypeName, defType)
+        this.addType(innerTypeName, defType)
       } else if (typeof innerTypeName === 'string') {
-        addType(innerTypeName)
+        this.addType(innerTypeName)
       } else {
         throw new Error(`Bad type for "${name}" in "${typeName}"`)
       }
@@ -122,7 +185,7 @@ function create (schema, root) {
       if (typeDef.valueNullable === true) {
         valueValidator = `(v) => v === null || ${valueValidator}(v)`
       }
-      typeValidators[typeName] = `(obj) => Kinds.List(obj) && Array.prototype.every.call(obj, ${valueValidator})`
+      this.typeValidators[typeName] = `(obj) => Kinds.List(obj) && Array.prototype.every.call(obj, ${valueValidator})`
 
       return
     }
@@ -133,10 +196,10 @@ function create (schema, root) {
       }
 
       let representation = 'map'
-      if (typeDef.representation) {
-        if (typeof typeDef.representation.listpairs === 'object') {
+      if (typeDef.representation !== undefined) {
+        if ('listpairs' in typeDef.representation && typeof typeDef.representation.listpairs === 'object') {
           representation = 'listpairs'
-        } else if (typeof typeDef.representation.map !== 'object') {
+        } else if (!('map' in typeDef.representation) || typeof typeDef.representation.map !== 'object') {
           throw new Error(`Unsupported map representation "${Object.keys(typeDef.representation).join(',')}"`)
         }
       }
@@ -148,21 +211,21 @@ function create (schema, root) {
       }
 
       if (representation === 'listpairs') {
-        typeValidators[typeName] = `(obj) => Kinds.List(obj) && Array.prototype.every.call(obj, (e) => Kinds.List(e) && e.length === 2 && Kinds.String(e[0]) && (${valueValidator})(e[1]))`
+        this.typeValidators[typeName] = `(obj) => Kinds.List(obj) && Array.prototype.every.call(obj, (e) => Kinds.List(e) && e.length === 2 && Kinds.String(e[0]) && (${valueValidator})(e[1]))`
         return
       }
 
-      typeValidators[typeName] = `(obj) => Kinds.Map(obj) && Array.prototype.every.call(Object.values(obj), ${valueValidator})`
+      this.typeValidators[typeName] = `(obj) => Kinds.Map(obj) && Array.prototype.every.call(Object.values(obj), ${valueValidator})`
 
       return
     }
 
     if (typeDef.kind === 'struct') {
       let representation = 'map'
-      if (typeDef.representation) {
-        if (typeof typeDef.representation.tuple === 'object') {
+      if (typeDef.representation !== undefined) {
+        if ('tuple' in typeDef.representation && typeof typeDef.representation.tuple === 'object') {
           representation = 'tuple'
-        } else if (typeof typeDef.representation.map !== 'object') {
+        } else if (!('map' in typeDef.representation) || typeof typeDef.representation.map !== 'object') {
           throw new Error(`Unsupported struct representation for "${typeName}": "${Object.keys(typeDef.representation).join(',')}"`)
         }
       }
@@ -171,14 +234,17 @@ function create (schema, root) {
       for (let [fieldName, fieldDef] of Object.entries(typeDef.fields)) {
         let required = representation !== 'map' || fieldDef.optional !== true
 
-        if (typeof typeDef.representation.map === 'object' &&
+        if (typeDef.representation !== undefined &&
+            'map' in typeDef.representation &&
+            typeof typeDef.representation.map === 'object' &&
             typeof typeDef.representation.map.fields === 'object' &&
             typeof typeDef.representation.map.fields[fieldName] === 'object') {
           if (typeDef.representation.map.fields[fieldName].implicit !== undefined) {
             required = false
           }
-          if (typeof typeDef.representation.map.fields[fieldName].rename === 'string') {
-            fieldName = typeDef.representation.map.fields[fieldName].rename
+          const fieldDef = typeDef.representation.map.fields[fieldName]
+          if (typeof fieldDef.rename === 'string') {
+            fieldName = fieldDef.rename
           }
         }
 
@@ -194,16 +260,18 @@ function create (schema, root) {
         if (fieldDef.nullable === true) {
           fieldValidator = `obj === null || ${fieldValidator}`
         }
-        typeValidators[fieldKey] = `(obj) => ${fieldValidator}`
+        this.typeValidators[fieldKey] = `(obj) => ${fieldValidator}`
       }
 
       if (representation === 'tuple') {
-        if (Array.isArray(typeDef.representation.tuple.fieldOrder)) {
+        if (typeDef.representation &&
+            'tuple' in typeDef.representation &&
+            Array.isArray(typeDef.representation.tuple.fieldOrder)) {
           requiredFields = typeDef.representation.tuple.fieldOrder
         }
-        typeValidators[typeName] = `(obj) => Kinds.List(obj) && obj.length === ${requiredFields.length}${requiredFields.map((fieldName, i) => ` && Types["${typeName} > ${fieldName}"](obj[${i}])`).join('')}`
+        this.typeValidators[typeName] = `(obj) => Kinds.List(obj) && obj.length === ${requiredFields.length}${requiredFields.map((fieldName, i) => ` && Types["${typeName} > ${fieldName}"](obj[${i}])`).join('')}`
       } else {
-        typeValidators[typeName] = `(obj) => { const keys = obj && Object.keys(obj); return Kinds.Map(obj) && ${JSON.stringify(requiredFields)}.every((k) => keys.includes(k)) && Object.entries(obj).every(([name, value]) => Types["${typeName} > " + name] && Types["${typeName} > " + name](value)) }`
+        this.typeValidators[typeName] = `(obj) => { const keys = obj && Object.keys(obj); return Kinds.Map(obj) && ${JSON.stringify(requiredFields)}.every((k) => keys.includes(k)) && Object.entries(obj).every(([name, value]) => Types["${typeName} > " + name] && Types["${typeName} > " + name](value)) }`
       }
 
       return
@@ -214,40 +282,40 @@ function create (schema, root) {
         throw new Error(`Bad union definition for "${typeName}"`)
       }
 
-      if (typeof typeDef.representation.keyed === 'object') {
+      if ('keyed' in typeDef.representation && typeof typeDef.representation.keyed === 'object') {
         const keys = typeDef.representation.keyed
         const validators = Object.entries(keys).map(([key, innerTypeName]) => {
           if (typeof innerTypeName !== 'string') {
             throw new Error(`Keyed union "${typeName} refers to non-string type name: ${JSON.stringify(innerTypeName)}`)
           }
-          addType(innerTypeName)
+          this.addType(innerTypeName)
           const validator = `Types["${innerTypeName}"]`
           return `(keys[0] === "${key}" && ${validator}(obj["${key}"]))`
         })
-        typeValidators[typeName] = `(obj) => { const keys = obj && Object.keys(obj); return Kinds.Map(obj) && keys.length === 1 && ${JSON.stringify(Object.keys(keys))}.includes(keys[0]) && (${validators.join(' || ')}) }`
+        this.typeValidators[typeName] = `(obj) => { const keys = obj && Object.keys(obj); return Kinds.Map(obj) && keys.length === 1 && ${JSON.stringify(Object.keys(keys))}.includes(keys[0]) && (${validators.join(' || ')}) }`
 
         return
       }
 
-      if (typeof typeDef.representation.kinded === 'object') {
+      if ('kinded' in typeDef.representation && typeof typeDef.representation.kinded === 'object') {
         const kinds = typeDef.representation.kinded
         const validators = Object.entries(kinds).map(([kind, innerTypeName]) => {
           if (typeof innerTypeName !== 'string') {
             throw new Error(`Kinded union "${typeName} refers to non-string type name: ${JSON.stringify(innerTypeName)}`)
           }
-          addType(innerTypeName)
+          this.addType(innerTypeName)
           // the Kinds.X(obj) prefix here results in a double-check in practice once we go into Types["Y"],
           // because we should be able to presume that the type in question will do a kind check of its own.
           // _But_, it makes sure that a broken schema that uses a bad kind discriminator will properly fail
           // instead of erroneously passing
           return `(Kinds.${tc(kind)}(obj) && Types["${innerTypeName}"](obj))`
         })
-        typeValidators[typeName] = `(obj) => ${validators.join(' || ')}`
+        this.typeValidators[typeName] = `(obj) => ${validators.join(' || ')}`
 
         return
       }
 
-      if (typeof typeDef.representation.inline === 'object') {
+      if ('inline' in typeDef.representation && typeof typeDef.representation.inline === 'object') {
         const inline = typeDef.representation.inline
         if (typeof inline.discriminantKey !== 'string') {
           throw new Error(`Expected "discriminantKey" for inline union "${typeName}"`)
@@ -259,15 +327,15 @@ function create (schema, root) {
           if (typeof innerTypeName !== 'string') {
             throw new Error(`Inline union "${typeName} refers to non-string type name: ${JSON.stringify(innerTypeName)}`)
           }
-          addType(innerTypeName)
+          this.addType(innerTypeName)
           return `(key === "${key}" && Types["${innerTypeName}"](obj))`
         })
-        typeValidators[typeName] = `(obj) => { const key = obj && obj["${inline.discriminantKey}"]; if (!Kinds.Map(obj) || !Kinds.String(key)) { return false }; obj = Object.assign({}, obj); delete obj["${inline.discriminantKey}"]; return ${validators.join(' || ')} }`
+        this.typeValidators[typeName] = `(obj) => { const key = obj && obj["${inline.discriminantKey}"]; if (!Kinds.Map(obj) || !Kinds.String(key)) { return false }; obj = Object.assign({}, obj); delete obj["${inline.discriminantKey}"]; return ${validators.join(' || ')} }`
 
         return
       }
 
-      if (typeof typeDef.representation.envelope === 'object') {
+      if ('envelope' in typeDef.representation && typeof typeDef.representation.envelope === 'object') {
         const envelope = typeDef.representation.envelope
         if (typeof envelope.discriminantKey !== 'string') {
           throw new Error(`Expected "discriminantKey" for envelope union "${typeName}"`)
@@ -282,23 +350,23 @@ function create (schema, root) {
           if (typeof innerTypeName !== 'string') {
             throw new Error(`Envelope union "${typeName} refers to non-string type name: ${JSON.stringify(innerTypeName)}`)
           }
-          addType(innerTypeName)
+          this.addType(innerTypeName)
           return `(key === "${key}" && Types["${innerTypeName}"](content))`
         })
-        typeValidators[typeName] = `(obj) => { const key = obj && obj["${envelope.discriminantKey}"]; const content = obj && obj["${envelope.contentKey}"]; return Kinds.Map(obj) && Kinds.String(key) && content !== undefined && (${validators.join(' || ')}) }`
+        this.typeValidators[typeName] = `(obj) => { const key = obj && obj["${envelope.discriminantKey}"]; const content = obj && obj["${envelope.contentKey}"]; return Kinds.Map(obj) && Kinds.String(key) && content !== undefined && (${validators.join(' || ')}) }`
 
         return
       }
 
-      if (typeof typeDef.representation.byteprefix === 'object') {
+      if ('byteprefix' in typeDef.representation && typeof typeDef.representation.byteprefix === 'object') {
         const bytes = Object.values(typeDef.representation.byteprefix)
         for (const byte of bytes) {
-          if (!Number.isInteger(byte) || byte < 0 || byte > 0xff) {
+          if (typeof byte !== 'number' || !Number.isInteger(byte) || byte < 0 || byte > 0xff) {
             throw new Error(`Invalid byteprefix byte for "${typeName}": "${byte}"`)
           }
         }
 
-        typeValidators[typeName] = `(obj) => { return Kinds.Bytes(obj) && obj.length >= 1 && ${JSON.stringify(bytes)}.includes(obj[0]) }`
+        this.typeValidators[typeName] = `(obj) => { return Kinds.Bytes(obj) && obj.length >= 1 && ${JSON.stringify(bytes)}.includes(obj[0]) }`
 
         return
       }
@@ -310,12 +378,13 @@ function create (schema, root) {
       if (typeof typeDef.members !== 'object') {
         throw new Error('Enum needs a "members" list')
       }
+      /** @type {{ [ k in EnumValue]: KindString | KindInt }} */
       let renames = {}
       let representation = 'string'
       if (typeof typeDef.representation === 'object') {
-        if (typeof typeDef.representation.string === 'object') {
+        if ('string' in typeDef.representation && typeof typeDef.representation.string === 'object') {
           renames = typeDef.representation.string
-        } else if (typeof typeDef.representation.int === 'object') {
+        } else if ('int' in typeDef.representation && typeof typeDef.representation.int === 'object') {
           renames = typeDef.representation.int
           representation = 'int'
         }
@@ -324,22 +393,11 @@ function create (schema, root) {
       if (values.some((v) => representation === 'string' ? typeof v !== 'string' : !Number.isInteger(v))) {
         throw new Error(`Enum members must be ${representation}s`)
       }
-      typeValidators[typeName] = `(obj) => Kinds.${tc(representation)}(obj) && ${JSON.stringify(values)}.includes(obj)`
+      this.typeValidators[typeName] = `(obj) => Kinds.${tc(representation)}(obj) && ${JSON.stringify(values)}.includes(obj)`
 
       return
     }
 
     throw new Error(`Can't deal with type kind: "${typeDef.kind}"`)
   }
-
-  addType(root)
-
-  let fn = `${KindsDefn};\n`
-  fn += `const Types = {\n${Object.entries(typeValidators).map(([name, fn]) => `  ["${name}"]: ${fn}`).join(',\n')}\n};\n`
-  fn += `return Types["${root}"](obj);`
-  // console.log(fn)
-
-  return new Function('obj', fn)
 }
-
-export default { create }

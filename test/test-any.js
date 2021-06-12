@@ -1,6 +1,6 @@
 /* eslint-env mocha */
 
-import SchemaValidator from 'ipld-schema-validator'
+import { create } from 'ipld-schema-validator'
 import chai from 'chai'
 
 const { assert } = chai
@@ -10,7 +10,7 @@ fauxCid.asCID = fauxCid
 
 describe('Any', () => {
   it('AnyScalar', () => {
-    const validator = SchemaValidator.create({ types: {} }, 'AnyScalar')
+    const validator = create({ types: {} }, 'AnyScalar')
     for (const obj of [1.01, -0.1, 101, -101, 'a string', false, true, new Uint8Array(0), Uint8Array.from([1, 2, 3])]) {
       assert.isTrue(validator(obj), `obj: ${obj} == 'AnyScalar'`)
     }
@@ -22,7 +22,7 @@ describe('Any', () => {
   })
 
   it('{String:AnyScalar}', () => {
-    const validator = SchemaValidator.create({
+    const validator = create({
       types: {
         $map: {
           kind: 'map',
@@ -45,7 +45,7 @@ describe('Any', () => {
   })
 
   it('[AnyScalar]', () => {
-    const validator = SchemaValidator.create({
+    const validator = create({
       types: {
         $list: {
           kind: 'list',
@@ -67,7 +67,7 @@ describe('Any', () => {
   })
 
   it('Any', () => {
-    const validator = SchemaValidator.create({ types: {} }, 'Any')
+    const validator = create({ types: {} }, 'Any')
     for (const obj of [null, 1.01, -0.1, 101, -101, 'a string', false, true, fauxCid, new Uint8Array(0), Uint8Array.from([1, 2, 3]), {}, { a: 1 }, { a: 'str', b: 2 }, { a: 'str' }, [], [1], ['str', 2], ['str']]) {
       assert.isTrue(validator(obj), `obj: ${obj} == 'Any'`)
     }
