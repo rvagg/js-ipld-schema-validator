@@ -20,6 +20,14 @@ export function safeReference (name) {
   return safeNameRe.test(name) ? `.${name}` : `['${name}']`
 }
 
+/**
+ * @param {string[]|number[]} list
+ * @returns {string}
+ */
+function fromArray (list) {
+  return JSON.stringify(list).replace(/"/g, '\'').replace(/,/g, ', ')
+}
+
 const KindsDefn =
 `const Kinds = {
   Null: (obj) => obj === null,
@@ -218,7 +226,7 @@ export class Builder {
       }
 
       const valueTypeName = defineType(typeDef.valueType, 'valueType')
-      let valueValidator = `Types["${valueTypeName}"]`
+      let valueValidator = `Types${safeReference(valueTypeName)}`
       if (typeDef.valueNullable === true) {
         valueValidator = `(v) => v === null || ${valueValidator}(v)`
       }
@@ -282,9 +290,9 @@ export class Builder {
             Array.isArray(typeDef.representation.tuple.fieldOrder)) {
           requiredFields = typeDef.representation.tuple.fieldOrder
         }
-        this.typeValidators[typeName] = `(obj) => Kinds.List(obj) && obj.length === ${requiredFields.length}${requiredFields.map((fieldName, i) => ` && Types["${typeName} > ${fieldName}"](obj[${i}])`).join('')}`
+        this.typeValidators[typeName] = `(obj) => Kinds.List(obj) && obj.length === ${requiredFields.length}${requiredFields.map((fieldName, i) => ` && Types['${typeName} > ${fieldName}'](obj[${i}])`).join('')}`
       } else {
-        this.typeValidators[typeName] = `(obj) => { const keys = obj && Object.keys(obj); return Kinds.Map(obj) && ${JSON.stringify(requiredFields).replace(/"/g, '\'')}.every((k) => keys.includes(k)) && Object.entries(obj).every(([name, value]) => Types['${typeName} > ' + name] && Types['${typeName} > ' + name](value)) }`
+        this.typeValidators[typeName] = `(obj) => { const keys = obj && Object.keys(obj); return Kinds.Map(obj) && ${fromArray(requiredFields)}.every((k) => keys.includes(k)) && Object.entries(obj).every(([name, value]) => Types['${typeName} > ' + name] && Types['${typeName} > ' + name](value)) }`
       }
 
       return
@@ -302,10 +310,10 @@ export class Builder {
             throw new Error(`Keyed union "${typeName} refers to non-string type name: ${JSON.stringify(innerTypeName)}`)
           }
           this.addType(innerTypeName)
-          const validator = `Types["${innerTypeName}"]`
-          return `(keys[0] === "${key}" && ${validator}(obj["${key}"]))`
+          const validator = `Types${safeReference(innerTypeName)}`
+          return `(keys[0] === '${key}' && ${validator}(obj${safeReference(key)}))`
         })
-        this.typeValidators[typeName] = `(obj) => { const keys = obj && Object.keys(obj); return Kinds.Map(obj) && keys.length === 1 && ${JSON.stringify(Object.keys(keys))}.includes(keys[0]) && (${validators.join(' || ')}) }`
+        this.typeValidators[typeName] = `(obj) => { const keys = obj && Object.keys(obj); return Kinds.Map(obj) && keys.length === 1 && ${fromArray(Object.keys(keys))}.includes(keys[0]) && (${validators.join(' || ')}) }`
 
         return
       }
@@ -313,6 +321,11 @@ export class Builder {
       if ('kinded' in typeDef.representation && typeof typeDef.representation.kinded === 'object') {
         const kinds = typeDef.representation.kinded
         const validators = Object.entries(kinds).map(([kind, innerTypeName]) => {
+          if (typeof innerTypeName === 'object' && innerTypeName.kind === 'link') {
+            const defn = innerTypeName
+            innerTypeName = `${typeName} > ${innerTypeName.expectedType} (anon)`
+            this.addType(innerTypeName, defn)
+          }
           if (typeof innerTypeName !== 'string') {
             throw new Error(`Kinded union "${typeName} refers to non-string type name: ${JSON.stringify(innerTypeName)}`)
           }
@@ -321,7 +334,7 @@ export class Builder {
           // because we should be able to presume that the type in question will do a kind check of its own.
           // _But_, it makes sure that a broken schema that uses a bad kind discriminator will properly fail
           // instead of erroneously passing
-          return `(Kinds.${tc(kind)}(obj) && Types["${innerTypeName}"](obj))`
+          return `(Kinds.${tc(kind)}(obj) && Types${safeReference(innerTypeName)}(obj))`
         })
         this.typeValidators[typeName] = `(obj) => ${validators.join(' || ')}`
 
@@ -341,7 +354,7 @@ export class Builder {
             throw new Error(`Inline union "${typeName} refers to non-string type name: ${JSON.stringify(innerTypeName)}`)
           }
           this.addType(innerTypeName)
-          return `(key === "${key}" && Types["${innerTypeName}"](obj))`
+          return `(key === '${key}' && Types${safeReference(innerTypeName)}(obj))`
         })
         this.typeValidators[typeName] = `(obj) => { const key = obj && obj${safeReference(inline.discriminantKey)}; if (!Kinds.Map(obj) || !Kinds.String(key)) { return false }; obj = Object.assign({}, obj); delete obj${safeReference(inline.discriminantKey)}; return ${validators.join(' || ')} }`
 
@@ -364,7 +377,7 @@ export class Builder {
             throw new Error(`Envelope union "${typeName} refers to non-string type name: ${JSON.stringify(innerTypeName)}`)
           }
           this.addType(innerTypeName)
-          return `(key === "${key}" && Types["${innerTypeName}"](content))`
+          return `(key === '${key}' && Types${safeReference(innerTypeName)}(content))`
         })
         this.typeValidators[typeName] = `(obj) => { const key = obj && obj${safeReference(envelope.discriminantKey)}; const content = obj && obj${safeReference(envelope.contentKey)}; return Kinds.Map(obj) && Kinds.String(key) && content !== undefined && (${validators.join(' || ')}) }`
 
@@ -372,6 +385,7 @@ export class Builder {
       }
 
       if ('byteprefix' in typeDef.representation && typeof typeDef.representation.byteprefix === 'object') {
+        /** @type {number[]} */
         const bytes = Object.values(typeDef.representation.byteprefix)
         for (const byte of bytes) {
           if (typeof byte !== 'number' || !Number.isInteger(byte) || byte < 0 || byte > 0xff) {
@@ -379,7 +393,7 @@ export class Builder {
           }
         }
 
-        this.typeValidators[typeName] = `(obj) => { return Kinds.Bytes(obj) && obj.length >= 1 && ${JSON.stringify(bytes)}.includes(obj[0]) }`
+        this.typeValidators[typeName] = `(obj) => { return Kinds.Bytes(obj) && obj.length >= 1 && ${fromArray(bytes)}.includes(obj[0]) }`
 
         return
       }
@@ -391,22 +405,35 @@ export class Builder {
       if (typeof typeDef.members !== 'object') {
         throw new Error('Enum needs a "members" list')
       }
-      /** @type {{ [ k in EnumValue]: KindString | KindInt }} */
-      let renames = {}
+      /** @type {string[]|number[]}} */
+      let values
       let representation = 'string'
       if (typeof typeDef.representation === 'object') {
         if ('string' in typeDef.representation && typeof typeDef.representation.string === 'object') {
-          renames = typeDef.representation.string
+          const renames = typeDef.representation.string
+          values = Object.keys(typeDef.members).map((v) => {
+            v = renames[v] !== undefined ? renames[v] : v
+            if (typeof v !== 'string') {
+              throw new Error('Enum members must be strings')
+            }
+            return v
+          })
         } else if ('int' in typeDef.representation && typeof typeDef.representation.int === 'object') {
-          renames = typeDef.representation.int
+          const renames = typeDef.representation.int
+          values = Object.keys(typeDef.members).map((v) => {
+            if (renames[v] === undefined || typeof renames[v] !== 'number' || !Number.isInteger(renames[v])) {
+              throw new Error('Enum members must be ints')
+            }
+            return renames[v]
+          })
           representation = 'int'
+        } else {
+          throw new Error('Enum doesn\'t have a valid representation')
         }
+      } else {
+        throw new Error('Enum doesn\'t have a valid representation')
       }
-      const values = Object.keys(typeDef.members).map((v) => renames[v] !== undefined ? renames[v] : v)
-      if (values.some((v) => representation === 'string' ? typeof v !== 'string' : !Number.isInteger(v))) {
-        throw new Error(`Enum members must be ${representation}s`)
-      }
-      this.typeValidators[typeName] = `(obj) => Kinds.${tc(representation)}(obj) && ${JSON.stringify(values)}.includes(obj)`
+      this.typeValidators[typeName] = `(obj) => Kinds.${tc(representation)}(obj) && ${fromArray(values)}.includes(obj)`
 
       return
     }
