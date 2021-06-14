@@ -412,7 +412,28 @@ describe('Errors', () => {
     }, 'SimpleEnum'), /Enum needs a "members" list/)
   })
 
-  it('bad enum rename values', () => {
+  it('bad string enum rename values', () => {
+    assert.throws(() => create({
+      types: {
+        SimpleEnum: {
+          kind: 'enum',
+          members: {
+            Foo: null,
+            Bar: null,
+            Baz: null
+          },
+          representation: {
+            string: {
+              Foo: 'str',
+              Bar: 0
+            }
+          }
+        }
+      }
+    }, 'SimpleEnum'), /Enum members must be strings/)
+  })
+
+  it('bad int enum rename values', () => {
     assert.throws(() => create({
       types: {
         SimpleEnum: {
@@ -431,5 +452,38 @@ describe('Errors', () => {
         }
       }
     }, 'SimpleEnum'), /Enum members must be ints/)
+  })
+
+  it('no enum representation', () => {
+    assert.throws(() => create({
+      types: {
+        SimpleEnum: {
+          kind: 'enum',
+          members: {
+            Foo: null,
+            Bar: null,
+            Baz: null
+          }
+        }
+      }
+    }, 'SimpleEnum'), /Enum doesn't have a valid representation/)
+  })
+
+  it('bad enum representation type', () => {
+    assert.throws(() => create({
+      types: {
+        SimpleEnum: {
+          kind: 'enum',
+          members: {
+            Foo: null,
+            Bar: null,
+            Baz: null
+          },
+          representation: {
+            nope: {}
+          }
+        }
+      }
+    }, 'SimpleEnum'), /Enum doesn't have a valid representation/)
   })
 })

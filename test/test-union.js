@@ -69,25 +69,25 @@ describe('Unions', () => {
   it('kinded complex', () => {
     const validator = create({
       types: {
-        $list: {
+        mylist: {
           kind: 'list',
           valueType: 'String'
         },
-        $map: {
+        mymap: {
           kind: 'map',
           keyType: 'String',
           valueType: 'Int'
-        },
-        $link: {
-          kind: 'link'
         },
         UnionKinded: {
           kind: 'union',
           representation: {
             kinded: {
-              list: '$list',
-              map: '$map',
-              link: '$link'
+              list: 'mylist',
+              map: 'mymap',
+              link: {
+                kind: 'link',
+                expectedType: 'MyLink'
+              }
             }
           }
         }
