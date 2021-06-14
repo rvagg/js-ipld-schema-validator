@@ -10,17 +10,27 @@
  * @typedef {import('ipld-schema/schema-schema').TypeTerm} TypeTerm
  */
 
+const safeNameRe = /^[a-z][a-z0-9]+$/i
+
+/**
+ * @param {string} name
+ * @returns {string}
+ */
+export function safeReference (name) {
+  return safeNameRe.test(name) ? `.${name}` : `['${name}']`
+}
+
 const KindsDefn =
 `const Kinds = {
   Null: (obj) => obj === null,
   Int: (obj) => Number.isInteger(obj),
-  Float: (obj) => typeof obj === "number" && Number.isFinite(obj),
-  String: (obj) => typeof obj === "string",
-  Bool: (obj) => typeof obj === "boolean",
+  Float: (obj) => typeof obj === 'number' && Number.isFinite(obj),
+  String: (obj) => typeof obj === 'string',
+  Bool: (obj) => typeof obj === 'boolean',
   Bytes: (obj) => obj instanceof Uint8Array,
-  Link: (obj) => !Kinds.Null(obj) && typeof obj === "object" && obj["asCID"] === obj,
+  Link: (obj) => !Kinds.Null(obj) && typeof obj === 'object' && obj.asCID === obj,
   List: (obj) => Array.isArray(obj),
-  Map: (obj) => !Kinds.Null(obj) && typeof obj === "object" && obj["asCID"] !== obj && !Kinds.List(obj) && !Kinds.Bytes(obj)
+  Map: (obj) => !Kinds.Null(obj) && typeof obj === 'object' && obj.asCID !== obj && !Kinds.List(obj) && !Kinds.Bytes(obj)
 }`
 
 const ScalarKindNames = ['Null', 'Int', 'Float', 'String', 'Bool', 'Bytes', 'Link']
@@ -98,7 +108,7 @@ export function create (schema, root) {
   builder.addType(root)
 
   let fn = builder.dumpValidators()
-  fn += `return Types["${root}"](obj);`
+  fn += `return Types['${root}'](obj);`
   // console.log(fn)
 
   return new Function('obj', fn)
@@ -123,8 +133,11 @@ export class Builder {
   }
 
   dumpValidators () {
-    let fn = `${KindsDefn};\n`
-    fn += `const Types = {\n${Object.entries(this.typeValidators).map(([name, fn]) => `  ["${name}"]: ${fn}`).join(',\n')}\n};\n`
+    const objKey = (/** @type {string} */ name) => {
+      return safeNameRe.test(name) ? name : `'${name}'`
+    }
+    let fn = `${KindsDefn}\n`
+    fn += `const Types = {\n${Object.entries(this.typeValidators).map(([name, fn]) => `  ${objKey(name)}: ${fn}`).join(',\n')}\n}\n`
     return fn
   }
 
@@ -181,7 +194,7 @@ export class Builder {
 
     if (typeDef.kind === 'list') {
       const valueTypeName = defineType(typeDef.valueType, 'valueType')
-      let valueValidator = `Types["${valueTypeName}"]`
+      let valueValidator = `Types${safeReference(valueTypeName)}`
       if (typeDef.valueNullable === true) {
         valueValidator = `(v) => v === null || ${valueValidator}(v)`
       }
@@ -256,7 +269,7 @@ export class Builder {
           throw new Error(`Struct "${typeName}" includes "optional" fields for non-map struct`)
         }
         const fieldTypeName = defineType(fieldDef.type, fieldName)
-        let fieldValidator = `Types["${fieldTypeName}"](obj)`
+        let fieldValidator = `Types${safeReference(fieldTypeName)}(obj)`
         if (fieldDef.nullable === true) {
           fieldValidator = `obj === null || ${fieldValidator}`
         }
@@ -271,7 +284,7 @@ export class Builder {
         }
         this.typeValidators[typeName] = `(obj) => Kinds.List(obj) && obj.length === ${requiredFields.length}${requiredFields.map((fieldName, i) => ` && Types["${typeName} > ${fieldName}"](obj[${i}])`).join('')}`
       } else {
-        this.typeValidators[typeName] = `(obj) => { const keys = obj && Object.keys(obj); return Kinds.Map(obj) && ${JSON.stringify(requiredFields)}.every((k) => keys.includes(k)) && Object.entries(obj).every(([name, value]) => Types["${typeName} > " + name] && Types["${typeName} > " + name](value)) }`
+        this.typeValidators[typeName] = `(obj) => { const keys = obj && Object.keys(obj); return Kinds.Map(obj) && ${JSON.stringify(requiredFields).replace(/"/g, '\'')}.every((k) => keys.includes(k)) && Object.entries(obj).every(([name, value]) => Types['${typeName} > ' + name] && Types['${typeName} > ' + name](value)) }`
       }
 
       return
@@ -330,7 +343,7 @@ export class Builder {
           this.addType(innerTypeName)
           return `(key === "${key}" && Types["${innerTypeName}"](obj))`
         })
-        this.typeValidators[typeName] = `(obj) => { const key = obj && obj["${inline.discriminantKey}"]; if (!Kinds.Map(obj) || !Kinds.String(key)) { return false }; obj = Object.assign({}, obj); delete obj["${inline.discriminantKey}"]; return ${validators.join(' || ')} }`
+        this.typeValidators[typeName] = `(obj) => { const key = obj && obj${safeReference(inline.discriminantKey)}; if (!Kinds.Map(obj) || !Kinds.String(key)) { return false }; obj = Object.assign({}, obj); delete obj${safeReference(inline.discriminantKey)}; return ${validators.join(' || ')} }`
 
         return
       }
@@ -353,7 +366,7 @@ export class Builder {
           this.addType(innerTypeName)
           return `(key === "${key}" && Types["${innerTypeName}"](content))`
         })
-        this.typeValidators[typeName] = `(obj) => { const key = obj && obj["${envelope.discriminantKey}"]; const content = obj && obj["${envelope.contentKey}"]; return Kinds.Map(obj) && Kinds.String(key) && content !== undefined && (${validators.join(' || ')}) }`
+        this.typeValidators[typeName] = `(obj) => { const key = obj && obj${safeReference(envelope.discriminantKey)}; const content = obj && obj${safeReference(envelope.contentKey)}; return Kinds.Map(obj) && Kinds.String(key) && content !== undefined && (${validators.join(' || ')}) }`
 
         return
       }

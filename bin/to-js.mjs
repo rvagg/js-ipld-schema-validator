@@ -1,12 +1,19 @@
 #!/usr/bin/env node
 
+import process from 'process'
+import { readFile } from 'fs/promises'
+import path from 'path'
 import { parse } from 'ipld-schema'
 import collectInput from 'ipld-schema/bin/collect-input.js'
-import { Builder } from 'ipld-schema-validator'
+import { Builder, safeReference } from 'ipld-schema-validator'
 
 /**
  * @typedef {import('ipld-schema/schema-schema').Schema} Schema
  */
+
+async function version () {
+  return JSON.parse(await readFile(path.resolve('package.json'), 'utf8')).version
+}
 
 /**
  * @param {string[]} files
@@ -51,13 +58,15 @@ export async function toJS (files, options) {
   for (const type of types) {
     builder.addType(type)
   }
+  const schemaContent = input.map(({ contents }) => contents).join('\n').replace(/^/mg, ' * ').replace(/\s+$/mg, '')
+  console.log(`/** Auto-generated with ipld-schema-validator@${await version()} at ${new Date().toDateString()} from IPLD Schema:\n *\n${schemaContent}\n */\n`)
   console.log(builder.dumpValidators())
   for (const type of types) {
     if (!options || options.type === 'script') {
-      console.log(`module.exports["${type}"] = Types["${type}"];`)
+      console.log(`module.exports${safeReference(type)} = Types${safeReference(type)}`)
     } else if (options.type === 'module') {
       // cross fingers and hope `type` will be export name compatible!
-      console.log(`export const ${type} = Types["${type}"];`)
+      console.log(`export const ${type} = Types${safeReference(type)}`)
     } else {
       throw new Error('Unexpected "type"')
     }
