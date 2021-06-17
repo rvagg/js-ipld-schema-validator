@@ -30,15 +30,15 @@ function fromArray (list) {
 
 const KindsDefn =
 `const Kinds = {
-  Null: (obj) => obj === null,
-  Int: (obj) => Number.isInteger(obj),
-  Float: (obj) => typeof obj === 'number' && Number.isFinite(obj),
-  String: (obj) => typeof obj === 'string',
-  Bool: (obj) => typeof obj === 'boolean',
-  Bytes: (obj) => obj instanceof Uint8Array,
-  Link: (obj) => !Kinds.Null(obj) && typeof obj === 'object' && obj.asCID === obj,
-  List: (obj) => Array.isArray(obj),
-  Map: (obj) => !Kinds.Null(obj) && typeof obj === 'object' && obj.asCID !== obj && !Kinds.List(obj) && !Kinds.Bytes(obj)
+  Null: /** @returns {boolean} */ (/** @type {any} */ obj) => obj === null,
+  Int: /** @returns {boolean} */ (/** @type {any} */ obj) => Number.isInteger(obj),
+  Float: /** @returns {boolean} */ (/** @type {any} */ obj) => typeof obj === 'number' && Number.isFinite(obj),
+  String: /** @returns {boolean} */ (/** @type {any} */ obj) => typeof obj === 'string',
+  Bool: /** @returns {boolean} */ (/** @type {any} */ obj) => typeof obj === 'boolean',
+  Bytes: /** @returns {boolean} */ (/** @type {any} */ obj) => obj instanceof Uint8Array,
+  Link: /** @returns {boolean} */ (/** @type {any} */ obj) => !Kinds.Null(obj) && typeof obj === 'object' && obj.asCID === obj,
+  List: /** @returns {boolean} */ (/** @type {any} */ obj) => Array.isArray(obj),
+  Map: /** @returns {boolean} */ (/** @type {any} */ obj) => !Kinds.Null(obj) && typeof obj === 'object' && obj.asCID !== obj && !Kinds.List(obj) && !Kinds.Bytes(obj)
 }`
 
 const ScalarKindNames = ['Null', 'Int', 'Float', 'String', 'Bool', 'Bytes', 'Link']
@@ -144,8 +144,9 @@ export class Builder {
     const objKey = (/** @type {string} */ name) => {
       return safeNameRe.test(name) ? name : `'${name}'`
     }
-    let fn = `${KindsDefn}\n`
-    fn += `const Types = {\n${Object.entries(this.typeValidators).map(([name, fn]) => `  ${objKey(name)}: ${fn}`).join(',\n')}\n}\n`
+    const fn = `${KindsDefn}\n` +
+      '/** @type {{ [k in string]: (obj:any)=>boolean}} */\n' +
+      `const Types = {\n${Object.entries(this.typeValidators).map(([name, fn]) => `  ${objKey(name)}: ${fn}`).join(',\n')}\n}\n`
     return fn
   }
 
@@ -206,7 +207,7 @@ export class Builder {
       if (typeDef.valueNullable === true) {
         valueValidator = `(v) => v === null || ${valueValidator}(v)`
       }
-      this.typeValidators[typeName] = `(obj) => Kinds.List(obj) && Array.prototype.every.call(obj, ${valueValidator})`
+      this.typeValidators[typeName] = `/** @returns {boolean} */ (/** @type {any} */ obj) => Kinds.List(obj) && Array.prototype.every.call(obj, ${valueValidator})`
 
       return
     }
@@ -232,11 +233,11 @@ export class Builder {
       }
 
       if (representation === 'listpairs') {
-        this.typeValidators[typeName] = `(obj) => Kinds.List(obj) && Array.prototype.every.call(obj, (e) => Kinds.List(e) && e.length === 2 && Kinds.String(e[0]) && (${valueValidator})(e[1]))`
+        this.typeValidators[typeName] = `/** @returns {boolean} */ (/** @type {any} */ obj) => Kinds.List(obj) && Array.prototype.every.call(obj, (e) => Kinds.List(e) && e.length === 2 && Kinds.String(e[0]) && (${valueValidator})(e[1]))`
         return
       }
 
-      this.typeValidators[typeName] = `(obj) => Kinds.Map(obj) && Array.prototype.every.call(Object.values(obj), ${valueValidator})`
+      this.typeValidators[typeName] = `/** @returns {boolean} */ (/** @type {any} */ obj) => Kinds.Map(obj) && Array.prototype.every.call(Object.values(obj), ${valueValidator})`
 
       return
     }
@@ -281,7 +282,7 @@ export class Builder {
         if (fieldDef.nullable === true) {
           fieldValidator = `obj === null || ${fieldValidator}`
         }
-        this.typeValidators[fieldKey] = `(obj) => ${fieldValidator}`
+        this.typeValidators[fieldKey] = `/** @returns {boolean} */ (/** @type {any} */ obj) => ${fieldValidator}`
       }
 
       if (representation === 'tuple') {
@@ -290,9 +291,9 @@ export class Builder {
             Array.isArray(typeDef.representation.tuple.fieldOrder)) {
           requiredFields = typeDef.representation.tuple.fieldOrder
         }
-        this.typeValidators[typeName] = `(obj) => Kinds.List(obj) && obj.length === ${requiredFields.length}${requiredFields.map((fieldName, i) => ` && Types['${typeName} > ${fieldName}'](obj[${i}])`).join('')}`
+        this.typeValidators[typeName] = `/** @returns {boolean} */ (/** @type {any} */ obj) => Kinds.List(obj) && obj.length === ${requiredFields.length}${requiredFields.map((fieldName, i) => ` && Types['${typeName} > ${fieldName}'](obj[${i}])`).join('')}`
       } else {
-        this.typeValidators[typeName] = `(obj) => { const keys = obj && Object.keys(obj); return Kinds.Map(obj) && ${fromArray(requiredFields)}.every((k) => keys.includes(k)) && Object.entries(obj).every(([name, value]) => Types['${typeName} > ' + name] && Types['${typeName} > ' + name](value)) }`
+        this.typeValidators[typeName] = `/** @returns {boolean} */ (/** @type {any} */ obj) => { const keys = obj && Object.keys(obj); return Kinds.Map(obj) && ${fromArray(requiredFields)}.every((k) => keys.includes(k)) && Object.entries(obj).every(([name, value]) => Types['${typeName} > ' + name] && Types['${typeName} > ' + name](value)) }`
       }
 
       return
@@ -313,7 +314,7 @@ export class Builder {
           const validator = `Types${safeReference(innerTypeName)}`
           return `(keys[0] === '${key}' && ${validator}(obj${safeReference(key)}))`
         })
-        this.typeValidators[typeName] = `(obj) => { const keys = obj && Object.keys(obj); return Kinds.Map(obj) && keys.length === 1 && ${fromArray(Object.keys(keys))}.includes(keys[0]) && (${validators.join(' || ')}) }`
+        this.typeValidators[typeName] = `/** @returns {boolean} */ (/** @type {any} */ obj) => { const keys = obj && Object.keys(obj); return Kinds.Map(obj) && keys.length === 1 && ${fromArray(Object.keys(keys))}.includes(keys[0]) && (${validators.join(' || ')}) }`
 
         return
       }
@@ -336,7 +337,7 @@ export class Builder {
           // instead of erroneously passing
           return `(Kinds.${tc(kind)}(obj) && Types${safeReference(innerTypeName)}(obj))`
         })
-        this.typeValidators[typeName] = `(obj) => ${validators.join(' || ')}`
+        this.typeValidators[typeName] = `/** @returns {boolean} */ (/** @type {any} */ obj) => ${validators.join(' || ')}`
 
         return
       }
@@ -356,7 +357,7 @@ export class Builder {
           this.addType(innerTypeName)
           return `(key === '${key}' && Types${safeReference(innerTypeName)}(obj))`
         })
-        this.typeValidators[typeName] = `(obj) => { const key = obj && obj${safeReference(inline.discriminantKey)}; if (!Kinds.Map(obj) || !Kinds.String(key)) { return false }; obj = Object.assign({}, obj); delete obj${safeReference(inline.discriminantKey)}; return ${validators.join(' || ')} }`
+        this.typeValidators[typeName] = `/** @returns {boolean} */ (/** @type {any} */ obj) => { const key = obj && obj${safeReference(inline.discriminantKey)}; if (!Kinds.Map(obj) || !Kinds.String(key)) { return false }; obj = Object.assign({}, obj); delete obj${safeReference(inline.discriminantKey)}; return ${validators.join(' || ')} }`
 
         return
       }
@@ -379,7 +380,7 @@ export class Builder {
           this.addType(innerTypeName)
           return `(key === '${key}' && Types${safeReference(innerTypeName)}(content))`
         })
-        this.typeValidators[typeName] = `(obj) => { const key = obj && obj${safeReference(envelope.discriminantKey)}; const content = obj && obj${safeReference(envelope.contentKey)}; return Kinds.Map(obj) && Kinds.String(key) && content !== undefined && (${validators.join(' || ')}) }`
+        this.typeValidators[typeName] = `/** @returns {boolean} */ (/** @type {any} */ obj) => { const key = obj && obj${safeReference(envelope.discriminantKey)}; const content = obj && obj${safeReference(envelope.contentKey)}; return Kinds.Map(obj) && Kinds.String(key) && content !== undefined && (${validators.join(' || ')}) }`
 
         return
       }
@@ -393,7 +394,7 @@ export class Builder {
           }
         }
 
-        this.typeValidators[typeName] = `(obj) => { return Kinds.Bytes(obj) && obj.length >= 1 && ${fromArray(bytes)}.includes(obj[0]) }`
+        this.typeValidators[typeName] = `/** @returns {boolean} */ (/** @type {any} */ obj) => { return Kinds.Bytes(obj) && obj.length >= 1 && ${fromArray(bytes)}.includes(obj[0]) }`
 
         return
       }
@@ -433,7 +434,7 @@ export class Builder {
       } else {
         throw new Error('Enum doesn\'t have a valid representation')
       }
-      this.typeValidators[typeName] = `(obj) => Kinds.${tc(representation)}(obj) && ${fromArray(values)}.includes(obj)`
+      this.typeValidators[typeName] = `/** @returns {boolean} */ (/** @type {any} */ obj) => Kinds.${tc(representation)}(obj) && ${fromArray(values)}.includes(obj)`
 
       return
     }
