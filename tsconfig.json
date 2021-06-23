@@ -33,11 +33,9 @@
   },
   "exclude": [
     "node_modules",
-    "esm/",
-    "cjs/",
-    "example.js",
-    "test/",
-    "types/"
+    "esm",
+    "cjs",
+    "types"
   ],
   "compileOnSave": false
 }

@@ -5,9 +5,8 @@
 //   `"type": "module"`
 // or the file needs to be renamed `example.mjs`.
 
-// @ts-ignore
-import Schema from 'ipld-schema'
-import SchemaValidator from 'ipld-schema-validator'
+import { parse as parseSchema } from 'ipld-schema'
+import { create as createValidator } from 'ipld-schema-validator'
 
 // Build an IPLD Schema from the text form
 const schemaText = `
@@ -27,11 +26,11 @@ type MyStruct struct {
 `
 
 // Compile it to its object descriptor form which SchemaValidator consumes
-const schemaDescriptor = new Schema(schemaText).descriptor
+const schemaDescriptor = parseSchema(schemaText)
 
 // Create a validator function from the Schema descriptor, with 'MyStruct' as the
 // root type to inspect
-const myStructValidator = SchemaValidator.create(schemaDescriptor, 'MyStruct')
+const myStructValidator = createValidator(schemaDescriptor, 'MyStruct')
 
 // An object that matches our schema
 const obj = {
@@ -41,11 +40,12 @@ const obj = {
 }
 
 console.log('Validating object as MyStruct:', myStructValidator(obj)) // true
+// @ts-ignore
 obj.boop = true // modify the object, adding an additional property not defined by the schema
 console.log('Validating modified object as MyStruct:', myStructValidator(obj)) // false
 
 // Make another validator function but use the 'MyList' (`[Int]`) type as the root
-const myListValidator = SchemaValidator.create(schemaDescriptor, 'MyList')
+const myListValidator = createValidator(schemaDescriptor, 'MyList')
 
 console.log('Validating [1, 2, 3] as MyStruct:', myListValidator([1, 2, 3])) // true
 console.log('Validating object as MyStruct:', myListValidator(obj)) // false
