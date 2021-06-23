@@ -61,7 +61,7 @@
     }
   },
   "dependencies": {
-    "ipld-schema": "^1.0.0",
+    "ipld-schema": "^1.1.0",
     "yargs": "^16.2.0"
   }
 }
