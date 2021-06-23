@@ -7,13 +7,18 @@ const { assert } = chai
 
 describe('Errors', () => {
   it('invalid schema definition', () => {
+    // @ts-ignore
     assert.throws(() => create({}, 'blip'), /Invalid schema definition/)
   })
 
   it('no root', () => {
+    // @ts-ignore
     assert.throws(() => create({ types: {} }), /A root is required/)
+    // @ts-ignore
     assert.throws(() => create({ types: {} }, ''), /A root is required/)
+    // @ts-ignore
     assert.throws(() => create({ types: {} }, null), /A root is required/)
+    // @ts-ignore
     assert.throws(() => create({ types: {} }, 100), /A root is required/)
   })
 
@@ -21,6 +26,7 @@ describe('Errors', () => {
     assert.throws(() => create({
       types: {
         $map: {
+          // @ts-ignore
           kind: 'blip',
           keyType: 'String',
           valueType: 'Int'
@@ -92,6 +98,7 @@ describe('Errors', () => {
         AMap: {
           kind: 'map',
           keyType: 'String',
+          // @ts-ignore
           valueType: [],
           representation: { map: {} }
         }
@@ -102,6 +109,7 @@ describe('Errors', () => {
       types: {
         AList: {
           kind: 'list',
+          // @ts-ignore
           valueType: true
         }
       }
@@ -115,6 +123,7 @@ describe('Errors', () => {
           kind: 'map',
           keyType: 'String',
           valueType: 'String',
+          // @ts-ignore
           representation: { blip: {} }
         }
       }
@@ -131,6 +140,7 @@ describe('Errors', () => {
             bar: { type: 'Bool' },
             baz: { type: 'String', optional: true }
           },
+          // @ts-ignore
           representation: { blip: {} }
         }
       }
@@ -156,6 +166,7 @@ describe('Errors', () => {
   it('bad union', () => {
     assert.throws(() => create({
       types: {
+        // @ts-ignore
         UnionUnknown: {
           kind: 'union'
         }
@@ -169,6 +180,7 @@ describe('Errors', () => {
         UnionInline: {
           kind: 'union',
           representation: {
+            // @ts-ignore
             inline: {
               discriminantKey: 'tag'
             }
@@ -196,6 +208,7 @@ describe('Errors', () => {
         UnionInline: {
           kind: 'union',
           representation: {
+            // @ts-ignore
             inline: {
               discriminantTable: {
                 foo: 'Foo',
@@ -231,6 +244,7 @@ describe('Errors', () => {
         UnionEnvelope: {
           kind: 'union',
           representation: {
+            // @ts-ignore
             envelope: {
               discriminantKey: 'bim',
               contentKey: 'bam'
@@ -248,6 +262,7 @@ describe('Errors', () => {
         UnionEnvelope: {
           kind: 'union',
           representation: {
+            // @ts-ignore
             envelope: {
               contentKey: 'bim',
               discriminantTable: {
@@ -269,6 +284,7 @@ describe('Errors', () => {
         UnionEnvelope: {
           kind: 'union',
           representation: {
+            // @ts-ignore
             envelope: {
               discriminantKey: 'bim',
               discriminantTable: {
@@ -295,6 +311,7 @@ describe('Errors', () => {
             kinded: {
               map: 'Foo',
               list: 'Bar',
+              // @ts-ignore
               int: {}
             }
           }
@@ -302,14 +319,17 @@ describe('Errors', () => {
       }
     }, 'UnionKinded'), /Kinded union "UnionKinded refers to non-string type name: {}/)
 
+    // @ts-ignore
     assert.throws(() => create({
       types: {
         UnionKeyed: {
           kind: 'union',
           representation: {
+            // @ts-ignore
             keyed: {
               bar: 'Bool',
               foo: 'Int',
+              // @ts-ignore
               baz: ['nope']
             }
           }
@@ -324,8 +344,10 @@ describe('Errors', () => {
           representation: {
             inline: {
               discriminantKey: 'tag',
+              // @ts-ignore
               discriminantTable: {
                 foo: 'Foo',
+                // @ts-ignore
                 bar: 100
               }
             }
@@ -361,6 +383,7 @@ describe('Errors', () => {
               contentKey: 'bam',
               discriminantTable: {
                 foo: 'Foo',
+                // @ts-ignore
                 bar: true,
                 baz: 'Baz'
               }
@@ -395,6 +418,7 @@ describe('Errors', () => {
         UnionKeyed: {
           kind: 'union',
           representation: {
+            // @ts-ignore
             blip: { }
           }
         }
@@ -405,6 +429,7 @@ describe('Errors', () => {
   it('bad enum descriptor', () => {
     assert.throws(() => create({
       types: {
+        // @ts-ignore
         SimpleEnum: {
           kind: 'enum'
         }
@@ -425,6 +450,7 @@ describe('Errors', () => {
           representation: {
             string: {
               Foo: 'str',
+              // @ts-ignore
               Bar: 0
             }
           }
@@ -445,6 +471,7 @@ describe('Errors', () => {
           },
           representation: {
             int: {
+              // @ts-ignore
               Foo: 'str',
               Bar: 0
             }
@@ -457,6 +484,7 @@ describe('Errors', () => {
   it('no enum representation', () => {
     assert.throws(() => create({
       types: {
+        // @ts-ignore
         SimpleEnum: {
           kind: 'enum',
           members: {
@@ -480,6 +508,7 @@ describe('Errors', () => {
             Baz: null
           },
           representation: {
+            // @ts-ignore
             nope: {}
           }
         }

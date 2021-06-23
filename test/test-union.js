@@ -156,13 +156,13 @@ describe('Unions', () => {
       }
     }, 'UnionInline')
 
-    let obj = { tag: 'foo', froz: true }
-    assert.isTrue(validator(obj))
-    assert.deepEqual(obj, { tag: 'foo', froz: true }) // unmolested
+    const obj1 = { tag: 'foo', froz: true }
+    assert.isTrue(validator(obj1))
+    assert.deepEqual(obj1, { tag: 'foo', froz: true }) // unmolested
 
-    obj = { tag: 'bar', bral: 'zot' }
-    assert.isTrue(validator(obj))
-    assert.deepEqual(obj, { tag: 'bar', bral: 'zot' }) // unmolested
+    const obj2 = { tag: 'bar', bral: 'zot' }
+    assert.isTrue(validator(obj2))
+    assert.deepEqual(obj2, { tag: 'bar', bral: 'zot' }) // unmolested
 
     assert.isFalse(validator({ froz: true }))
     assert.isFalse(validator({ bral: 'zot' }))
