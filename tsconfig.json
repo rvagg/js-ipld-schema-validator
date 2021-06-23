@@ -37,7 +37,7 @@
     "cjs/",
     "example.js",
     "test/",
-		"types/"
+    "types/"
   ],
   "compileOnSave": false
 }
