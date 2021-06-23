@@ -11,10 +11,10 @@ const yargs = Yargs(hideBin(process.argv))
     'Accepts .ipldsch files (from file or stdin) and prints a JavaScript module exporting validators for the types',
     (yargs) => {
       return yargs.option('type', {
-        default: 'script',
-        choices: ['script', 'module'],
+        default: 'module',
+        choices: ['module', 'script'],
         type: 'string',
-        describe: '"script" or "module" module type'
+        describe: 'export using "module" or "script" module exports style'
       })
     })
   .showHelpOnFail(true)

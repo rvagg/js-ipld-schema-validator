@@ -62,11 +62,11 @@ export async function toJS (files, options) {
   console.log(`/** Auto-generated with ipld-schema-validator@${await version()} at ${new Date().toDateString()} from IPLD Schema:\n *\n${schemaContent}\n */\n`)
   console.log(builder.dumpValidators())
   for (const type of types) {
-    if (!options || options.type === 'script') {
-      console.log(`module.exports${safeReference(type)} = Types${safeReference(type)}`)
-    } else if (options.type === 'module') {
+    if (!options || options.type === 'module') {
       // cross fingers and hope `type` will be export name compatible!
       console.log(`export const ${type} = Types${safeReference(type)}`)
+    } else if (options.type === 'script') {
+      console.log(`module.exports${safeReference(type)} = Types${safeReference(type)}`)
     } else {
       throw new Error('Unexpected "type"')
     }
