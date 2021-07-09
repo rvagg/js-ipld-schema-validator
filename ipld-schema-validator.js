@@ -8,6 +8,7 @@
  * @typedef {import('ipld-schema/schema-schema').Type} Type
  * @typedef {import('ipld-schema/schema-schema').TypeName} TypeName
  * @typedef {import('ipld-schema/schema-schema').TypeTerm} TypeTerm
+ * @typedef {(obj:any)=>boolean} ValidatorFunction
  */
 
 const safeNameRe = /^[a-z][a-z0-9]+$/i
@@ -105,7 +106,7 @@ function tc (s) {
 /**
  * @param {Schema} schema
  * @param {string} root
- * @returns {Function}
+ * @returns {ValidatorFunction}
  */
 export function create (schema, root) {
   if (!root || typeof root !== 'string') {
@@ -119,7 +120,7 @@ export function create (schema, root) {
   fn += `return Types['${root}'](obj);`
   // console.log(fn)
 
-  return new Function('obj', fn)
+  return /** @type {ValidatorFunction} */ (new Function('obj', fn))
 }
 
 export class Builder {
