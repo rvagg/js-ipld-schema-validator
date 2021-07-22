@@ -40,7 +40,7 @@
   "homepage": "https://github.com/rvagg/js-ipld-schema-validator#readme",
   "devDependencies": {
     "@types/chai": "^4.2.18",
-    "@types/mocha": "^8.2.2",
+    "@types/mocha": "^9.0.0",
     "@types/yargs": "^17.0.0",
     "c8": "^7.7.3",
     "chai": "^4.3.4",
