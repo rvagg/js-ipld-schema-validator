@@ -1,3 +1,10 @@
+### [0.2.2](https://github.com/rvagg/js-ipld-schema-validator/compare/v0.2.1...v0.2.2) (2021-07-23)
+
+
+### Trivial Changes
+
+* **deps-dev:** bump @types/mocha from 8.2.3 to 9.0.0 ([890a648](https://github.com/rvagg/js-ipld-schema-validator/commit/890a648a6718cdd44af85bb01f3a8d19a810b86f))
+
 ### [0.2.1](https://github.com/rvagg/js-ipld-schema-validator/compare/v0.2.0...v0.2.1) (2021-07-20)
 
 
