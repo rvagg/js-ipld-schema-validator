@@ -25,9 +25,10 @@ describe('Any', () => {
     const validator = create({
       types: {
         $map: {
-          kind: 'map',
-          keyType: 'String',
-          valueType: 'AnyScalar'
+          map: {
+            keyType: 'String',
+            valueType: 'AnyScalar'
+          }
         }
       }
     }, '$map')
@@ -48,8 +49,9 @@ describe('Any', () => {
     const validator = create({
       types: {
         $list: {
-          kind: 'list',
-          valueType: 'AnyScalar'
+          list: {
+            valueType: 'AnyScalar'
+          }
         }
       }
     }, '$list')

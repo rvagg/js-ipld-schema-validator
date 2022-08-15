@@ -13,13 +13,15 @@ describe('Nested maps and lists', () => {
     const validator = create({
       types: {
         $list: {
-          kind: 'list',
-          valueType: { kind: 'link' }
+          list: {
+            valueType: { link: {} }
+          }
         },
         $map: {
-          kind: 'map',
-          keyType: 'String',
-          valueType: '$list'
+          map: {
+            keyType: 'String',
+            valueType: '$list'
+          }
         }
       }
     }, '$map')
@@ -44,13 +46,15 @@ describe('Nested maps and lists', () => {
     const validator = create({
       types: {
         $map: {
-          kind: 'map',
-          keyType: 'String',
-          valueType: 'Int'
+          map: {
+            keyType: 'String',
+            valueType: 'Int'
+          }
         },
         $list: {
-          kind: 'list',
-          valueType: '$map'
+          list: {
+            valueType: '$map'
+          }
         }
       }
     }, '$list')

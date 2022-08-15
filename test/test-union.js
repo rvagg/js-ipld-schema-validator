@@ -13,12 +13,18 @@ describe('Unions', () => {
     const validator = create({
       types: {
         UnionKeyed: {
-          kind: 'union',
-          representation: {
-            keyed: {
-              bar: 'Bool',
-              foo: 'Int',
-              baz: 'String'
+          union: {
+            members: [
+              'Bool',
+              'Int',
+              'String'
+            ],
+            representation: {
+              keyed: {
+                bar: 'Bool',
+                foo: 'Int',
+                baz: 'String'
+              }
             }
           }
         }
@@ -37,16 +43,22 @@ describe('Unions', () => {
   it('kinded', () => {
     const validator = create({
       types: {
-        Bar: { kind: 'bool' },
-        Baz: { kind: 'string' },
-        Foo: { kind: 'int' },
+        Bar: { bool: {} },
+        Baz: { string: {} },
+        Foo: { int: {} },
         UnionKinded: {
-          kind: 'union',
-          representation: {
-            kinded: {
-              int: 'Foo',
-              bool: 'Bar',
-              string: 'Baz'
+          union: {
+            members: [
+              'Foo',
+              'Bar',
+              'Baz'
+            ],
+            representation: {
+              kinded: {
+                int: 'Foo',
+                bool: 'Bar',
+                string: 'Baz'
+              }
             }
           }
         }
@@ -66,46 +78,64 @@ describe('Unions', () => {
     assert.isFalse(validator({ baz: 'yep' }))
   })
 
-  it('kinded complex', () => {
-    const validator = create({
-      types: {
-        mylist: {
-          kind: 'list',
-          valueType: 'String'
-        },
-        mymap: {
-          kind: 'map',
-          keyType: 'String',
-          valueType: 'Int'
-        },
-        UnionKinded: {
-          kind: 'union',
-          representation: {
-            kinded: {
-              list: 'mylist',
-              map: 'mymap',
-              link: {
-                kind: 'link',
-                expectedType: 'MyLink'
+  describe('kinded complex', () => {
+    /**
+     * @param {{expectedType?: string}} link
+     */
+    const run = (link) => {
+      const validator = create({
+        types: {
+          mylist: {
+            list: {
+              valueType: 'String'
+            }
+          },
+          mymap: {
+            map: {
+              keyType: 'String',
+              valueType: 'Int'
+            }
+          },
+          UnionKinded: {
+            union: {
+              members: [
+                'mylist',
+                'mymap',
+                { link }
+              ],
+              representation: {
+                kinded: {
+                  list: 'mylist',
+                  map: 'mymap',
+                  link: { link }
+                }
               }
             }
           }
         }
-      }
-    }, 'UnionKinded')
+      }, 'UnionKinded')
 
-    for (const obj of [null, 1.01, -0.1, 101, -101, 'a string', false, true, new Uint8Array(0), Uint8Array.from([1, 2, 3]), undefined]) {
-      assert.isFalse(validator(obj))
+      for (const obj of [null, 1.01, -0.1, 101, -101, 'a string', false, true, new Uint8Array(0), Uint8Array.from([1, 2, 3]), undefined]) {
+        assert.isFalse(validator(obj))
+      }
+
+      assert.isTrue(validator(fauxCid))
+      assert.isTrue(validator([]))
+      assert.isTrue(validator(['', 'a']))
+      assert.isFalse(validator(['', 1]))
+      assert.isFalse(validator([1, 2]))
+      assert.isTrue(validator({}))
+      assert.isTrue(validator({ a: 1, b: 2 }))
+      assert.isFalse(validator({ a: 'a', b: 2 }))
     }
 
-    assert.isTrue(validator(fauxCid))
-    assert.isTrue(validator([]))
-    assert.isTrue(validator(['', 'a']))
-    assert.isFalse(validator(['', 1]))
-    assert.isFalse(validator([1, 2]))
-    assert.isTrue(validator({}))
-    assert.isTrue(validator({ a: 1, b: 2 }))
-    assert.isFalse(validator({ a: 'a', b: 2 }))
+    it('named link', () => {
+      run({ expectedType: 'MyLink' })
+    })
+
+    it('unnamed link', () => {
+      run({})
+    })
   })
 
   it('inline', () => {
@@ -128,30 +158,37 @@ describe('Unions', () => {
     const validator = create({
       types: {
         UnionInline: {
-          kind: 'union',
-          representation: {
-            inline: {
-              discriminantKey: 'tag',
-              discriminantTable: {
-                foo: 'Foo',
-                bar: 'Bar'
+          union: {
+            members: [
+              'Foo',
+              'Bar'
+            ],
+            representation: {
+              inline: {
+                discriminantKey: 'tag',
+                discriminantTable: {
+                  foo: 'Foo',
+                  bar: 'Bar'
+                }
               }
             }
           }
         },
         Foo: {
-          kind: 'struct',
-          fields: {
-            froz: { type: 'Bool' }
-          },
-          representation: { map: {} }
+          struct: {
+            fields: {
+              froz: { type: 'Bool' }
+            },
+            representation: { map: {} }
+          }
         },
         Bar: {
-          kind: 'struct',
-          fields: {
-            bral: { type: 'String' }
-          },
-          representation: { map: {} }
+          struct: {
+            fields: {
+              bral: { type: 'String' }
+            },
+            representation: { map: {} }
+          }
         }
       }
     }, 'UnionInline')
@@ -192,19 +229,25 @@ describe('Unions', () => {
     */
     const validator = create({
       types: {
-        Bar: { kind: 'bool' },
-        Baz: { kind: 'string' },
-        Foo: { kind: 'int' },
+        Bar: { bool: {} },
+        Baz: { string: {} },
+        Foo: { int: {} },
         UnionEnvelope: {
-          kind: 'union',
-          representation: {
-            envelope: {
-              discriminantKey: 'bim',
-              contentKey: 'bam',
-              discriminantTable: {
-                foo: 'Foo',
-                bar: 'Bar',
-                baz: 'Baz'
+          union: {
+            members: [
+              'Foo',
+              'Bar',
+              'Baz'
+            ],
+            representation: {
+              envelope: {
+                discriminantKey: 'bim',
+                contentKey: 'bam',
+                discriminantTable: {
+                  foo: 'Foo',
+                  bar: 'Bar',
+                  baz: 'Baz'
+                }
               }
             }
           }
@@ -229,7 +272,7 @@ describe('Unions', () => {
     assert.isFalse(validator([]))
   })
 
-  it('byteprefix', () => {
+  it('bytesprefix', () => {
     /*
       type Bls12_381Signature bytes
 
@@ -238,18 +281,23 @@ describe('Unions', () => {
       type Signature union {
         | Secp256k1Signature 0
         | Bls12_381Signature 1
-      } representation byteprefix
+      } representation bytesprefix
     */
     const validator = create({
       types: {
-        Bls12_381Signature: { kind: 'bytes' },
-        Secp256k1Signature: { kind: 'bytes' },
+        Bls12_381Signature: { bytes: {} },
+        Secp256k1Signature: { bytes: {} },
         Signature: {
-          kind: 'union',
-          representation: {
-            byteprefix: {
-              Secp256k1Signature: 0,
-              Bls12_381Signature: 1
+          union: {
+            members: [
+              'Secp256k1Signature',
+              'Bls12_381Signature'
+            ],
+            representation: {
+              bytesprefix: {
+                Secp256k1Signature: '0',
+                Bls12_381Signature: '1'
+              }
             }
           }
         }

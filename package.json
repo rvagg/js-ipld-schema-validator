@@ -6,20 +6,19 @@
   "type": "module",
   "types": "./types/ipld-schema-validator.d.ts",
   "scripts": {
-    "build": "npm run build:js && npm run build:types",
-    "build:js": "ipjs build --tests --main && npm run build:copy",
-    "build:copy": "cp -a tsconfig.json *.js test/ bin/ dist/",
-    "build:types": "npm run build:copy && cd dist && tsc --build",
+    "build": "npm run build:types",
+    "build:types": "tsc --build",
     "prepublishOnly": "npm run build",
     "lint": "standard",
-    "test:cjs": "npm run build && mocha dist/cjs/node-test/test-*.js",
     "test:node": "c8 --check-coverage --branches 100 --functions 100 --lines 100 mocha test/test-*.js",
-    "test:browser": "polendina --cleanup dist/cjs/node-test/test-*.js",
-    "test": "npm run lint && npm run test:node && npm run test:cjs && npm run test:browser",
+    "test:browser": "polendina --cleanup test/test-*.js",
+    "test": "npm run lint && npm run build && npm run test:node && npm run test:browser",
     "coverage": "c8 --reporter=html mocha test/test-*.js && npm_config_yes=true npx st -d coverage -p 8080"
   },
   "exports": {
-    "import": "./ipld-schema-validator.js"
+    ".": {
+      "import": "./ipld-schema-validator.js"
+    }
   },
   "bin": {
     "ipld-schema-validator": "bin/cli.mjs"
@@ -39,16 +38,15 @@
   },
   "homepage": "https://github.com/rvagg/js-ipld-schema-validator#readme",
   "devDependencies": {
-    "@types/chai": "^4.2.18",
-    "@types/mocha": "^9.0.0",
-    "@types/yargs": "^17.0.0",
-    "c8": "^7.7.3",
-    "chai": "^4.3.4",
-    "ipjs": "^5.0.0",
+    "@types/chai": "^4.3.3",
+    "@types/mocha": "^9.1.1",
+    "@types/yargs": "^17.0.11",
+    "c8": "^7.12.0",
+    "chai": "^4.3.6",
     "mocha": "^10.0.0",
-    "polendina": "^3.0.0",
+    "polendina": "^3.1.0",
     "standard": "^17.0.0",
-    "typescript": "^4.3.4"
+    "typescript": "^4.7.4"
   },
   "typesVersions": {
     "*": {
@@ -61,43 +59,91 @@
     }
   },
   "dependencies": {
-    "ipld-schema": "^2.0.2",
-    "yargs": "^17.0.1"
+    "ipld-schema": "^3.0.2",
+    "yargs": "^17.5.1"
   },
   "release": {
     "branches": [
       "master"
     ],
     "plugins": [
-      ["@semantic-release/commit-analyzer", {
-        "preset": "conventionalcommits",
-        "releaseRules": [
-          {"breaking": true, "release": "major"},
-          {"revert": true, "release": "patch"},
-          {"type": "feat", "release": "minor"},
-          {"type": "fix", "release": "patch"},
-          {"type": "chore", "release": "patch"},
-          {"type": "docs", "release": "patch"},
-          {"type": "test", "release": "patch"},
-          {"scope": "no-release", "release": false}
-        ]
-      }],
-      ["@semantic-release/release-notes-generator", {
-        "preset": "conventionalcommits",
-        "presetConfig": {
-          "types": [
-            {"type": "feat", "section": "Features"},
-            {"type": "fix", "section": "Bug Fixes"},
-            {"type": "chore", "section": "Trivial Changes"},
-            {"type": "docs", "section": "Trivial Changes"},
-            {"type": "test", "section": "Tests"}
+      [
+        "@semantic-release/commit-analyzer",
+        {
+          "preset": "conventionalcommits",
+          "releaseRules": [
+            {
+              "breaking": true,
+              "release": "major"
+            },
+            {
+              "revert": true,
+              "release": "patch"
+            },
+            {
+              "type": "feat",
+              "release": "minor"
+            },
+            {
+              "type": "fix",
+              "release": "patch"
+            },
+            {
+              "type": "chore",
+              "release": "patch"
+            },
+            {
+              "type": "docs",
+              "release": "patch"
+            },
+            {
+              "type": "test",
+              "release": "patch"
+            },
+            {
+              "scope": "no-release",
+              "release": false
+            }
           ]
         }
-      }],
+      ],
+      [
+        "@semantic-release/release-notes-generator",
+        {
+          "preset": "conventionalcommits",
+          "presetConfig": {
+            "types": [
+              {
+                "type": "feat",
+                "section": "Features"
+              },
+              {
+                "type": "fix",
+                "section": "Bug Fixes"
+              },
+              {
+                "type": "chore",
+                "section": "Trivial Changes"
+              },
+              {
+                "type": "docs",
+                "section": "Trivial Changes"
+              },
+              {
+                "type": "test",
+                "section": "Tests"
+              }
+            ]
+          }
+        }
+      ],
       "@semantic-release/changelog",
-      ["@semantic-release/npm", {
-        "pkgRoot": "dist"
-      }],
+      [
+        "@semantic-release/npm",
+        {
+          "pkgRoot": "dist"
+        }
+      ],
       "@semantic-release/github",
       "@semantic-release/git"
     ]

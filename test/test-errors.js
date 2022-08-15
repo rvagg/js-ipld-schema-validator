@@ -27,21 +27,40 @@ describe('Errors', () => {
       types: {
         $map: {
           // @ts-ignore
-          kind: 'blip',
-          keyType: 'String',
-          valueType: 'Int'
+          blip: {
+            keyType: 'String',
+            valueType: 'Int'
+          }
         }
       }
     }, '$map'), /type kind: "blip"/)
+  })
+
+  it('multiple kinds', () => {
+    assert.throws(() => create({
+      types: {
+        boo: { bool: {}, int: {} }
+      }
+    }, 'boo'), /Malformed type definition: expected single kind key \("boo"\)/)
+  })
+
+  it('no kind', () => {
+    assert.throws(() => create({
+      types: {
+        // @ts-ignore
+        boo: { }
+      }
+    }, 'boo'), /Malformed type definition: empty \("boo"\)/)
   })
 
   it('recursive map kind', () => {
     assert.throws(() => create({
       types: {
         $map: {
-          kind: 'map',
-          keyType: 'String',
-          valueType: '$map'
+          map: {
+            keyType: 'String',
+            valueType: '$map'
+          }
         }
       }
     }, '$map'), /Recursive typedef in type "\$map"/)
@@ -51,8 +70,9 @@ describe('Errors', () => {
     assert.throws(() => create({
       types: {
         $list: {
-          kind: 'list',
-          valueType: '$list'
+          list: {
+            valueType: '$list'
+          }
         }
       }
     }, '$list'), /Recursive typedef in type "\$list"/)
@@ -62,9 +82,10 @@ describe('Errors', () => {
     assert.throws(() => create({
       types: {
         $map: {
-          kind: 'map',
-          keyType: 'Bytes',
-          valueType: 'Int'
+          map: {
+            keyType: 'Bytes',
+            valueType: 'Int'
+          }
         }
       }
     }, '$map'), /Invalid keyType for Map "\$map", expected String, found "Bytes"/)
@@ -74,19 +95,48 @@ describe('Errors', () => {
     assert.throws(() => create({
       types: {
         $list: {
-          kind: 'list',
-          valueType: 'String'
+          list: {
+            valueType: 'String'
+          }
         }
       }
     }, 'blip'), /A type must match an existing type definition \("blip"\)/)
+  })
+
+  describe('invalid typedef', () => {
+    it('array', () => {
+      assert.throws(() => create({
+        types: {
+          // @ts-ignore
+          $list: []
+        }
+      }, '$list'), /Malformed type definition: not an object: \("\$list"\)/)
+    })
+    it('null', () => {
+      assert.throws(() => create({
+        types: {
+          // @ts-ignore
+          $list: null
+        }
+      }, '$list'), /Malformed type definition: not an object: \("\$list"\)/)
+    })
+    it('other', () => {
+      assert.throws(() => create({
+        types: {
+          // @ts-ignore
+          $list: true
+        }
+      }, '$list'), /Malformed type definition: not an object: \("\$list"\)/)
+    })
   })
 
   it('invalid reference', () => {
     assert.throws(() => create({
       types: {
         $list: {
-          kind: 'list',
-          valueType: 'boop'
+          list: {
+            valueType: 'boop'
+          }
         }
       }
     }, '$list'), /A type must match an existing type definition \("boop"\)/)
@@ -96,11 +146,12 @@ describe('Errors', () => {
     assert.throws(() => create({
       types: {
         AMap: {
-          kind: 'map',
-          keyType: 'String',
-          // @ts-ignore
-          valueType: [],
-          representation: { map: {} }
+          map: {
+            keyType: 'String',
+            // @ts-ignore
+            valueType: [],
+            representation: { map: {} }
+          }
         }
       }
     }, 'AMap'), /Bad type for "valueType" in "AMap"/)
@@ -108,9 +159,10 @@ describe('Errors', () => {
     assert.throws(() => create({
       types: {
         AList: {
-          kind: 'list',
-          // @ts-ignore
-          valueType: true
+          list: {
+            // @ts-ignore
+            valueType: true
+          }
         }
       }
     }, 'AList'), /Bad type for "valueType" in "AList"/)
@@ -120,11 +172,12 @@ describe('Errors', () => {
     assert.throws(() => create({
       types: {
         AMap: {
-          kind: 'map',
-          keyType: 'String',
-          valueType: 'String',
-          // @ts-ignore
-          representation: { blip: {} }
+          map: {
+            keyType: 'String',
+            valueType: 'String',
+            // @ts-ignore
+            representation: { blip: {} }
+          }
         }
       }
     }, 'AMap'), /Unsupported map representation "blip"/)
@@ -134,14 +187,15 @@ describe('Errors', () => {
     assert.throws(() => create({
       types: {
         SimpleStruct: {
-          kind: 'struct',
-          fields: {
-            foo: { type: 'Int', optional: true },
-            bar: { type: 'Bool' },
-            baz: { type: 'String', optional: true }
-          },
-          // @ts-ignore
-          representation: { blip: {} }
+          struct: {
+            fields: {
+              foo: { type: 'Int', optional: true },
+              bar: { type: 'Bool' },
+              baz: { type: 'String', optional: true }
+            },
+            // @ts-ignore
+            representation: { blip: {} }
+          }
         }
       }
     }, 'SimpleStruct'), /Unsupported struct representation for "SimpleStruct": "blip"/)
@@ -151,13 +205,14 @@ describe('Errors', () => {
     assert.throws(() => create({
       types: {
         SimpleStruct: {
-          kind: 'struct',
-          fields: {
-            foo: { type: 'Int', optional: true },
-            bar: { type: 'Bool' },
-            baz: { type: 'String', optional: true }
-          },
-          representation: { tuple: {} }
+          struct: {
+            fields: {
+              foo: { type: 'Int', optional: true },
+              bar: { type: 'Bool' },
+              baz: { type: 'String', optional: true }
+            },
+            representation: { tuple: {} }
+          }
         }
       }
     }, 'SimpleStruct'), /Struct "SimpleStruct" includes "optional" fields for non-map struct/)
@@ -166,9 +221,9 @@ describe('Errors', () => {
   it('bad union', () => {
     assert.throws(() => create({
       types: {
-        // @ts-ignore
         UnionUnknown: {
-          kind: 'union'
+          // @ts-ignore
+          union: {}
         }
       }
     }, 'UnionUnknown'), /Bad union definition for "UnionUnknown"/)
@@ -178,27 +233,30 @@ describe('Errors', () => {
     assert.throws(() => create({
       types: {
         UnionInline: {
-          kind: 'union',
-          representation: {
-            // @ts-ignore
-            inline: {
-              discriminantKey: 'tag'
+          union: {
+            representation: {
+              // @ts-ignore
+              inline: {
+                discriminantKey: 'tag'
+              }
             }
           }
         },
         Foo: {
-          kind: 'struct',
-          fields: {
-            froz: { type: 'Bool' }
-          },
-          representation: { map: {} }
+          struct: {
+            fields: {
+              froz: { type: 'Bool' }
+            },
+            representation: { map: {} }
+          }
         },
         Bar: {
-          kind: 'struct',
-          fields: {
-            bral: { type: 'String' }
-          },
-          representation: { map: {} }
+          struct: {
+            fields: {
+              bral: { type: 'String' }
+            },
+            representation: { map: {} }
+          }
         }
       }
     }, 'UnionInline'), /Expected "discriminantTable" for inline union "UnionInline"/)
@@ -206,30 +264,33 @@ describe('Errors', () => {
     assert.throws(() => create({
       types: {
         UnionInline: {
-          kind: 'union',
-          representation: {
-            // @ts-ignore
-            inline: {
-              discriminantTable: {
-                foo: 'Foo',
-                bar: 'Bar'
+          union: {
+            representation: {
+              // @ts-ignore
+              inline: {
+                discriminantTable: {
+                  foo: 'Foo',
+                  bar: 'Bar'
+                }
               }
             }
           }
         },
         Foo: {
-          kind: 'struct',
-          fields: {
-            froz: { type: 'Bool' }
-          },
-          representation: { map: {} }
+          struct: {
+            fields: {
+              froz: { type: 'Bool' }
+            },
+            representation: { map: {} }
+          }
         },
         Bar: {
-          kind: 'struct',
-          fields: {
-            bral: { type: 'String' }
-          },
-          representation: { map: {} }
+          struct: {
+            fields: {
+              bral: { type: 'String' }
+            },
+            representation: { map: {} }
+          }
         }
       }
     }, 'UnionInline'), /Expected "discriminantKey" for inline union "UnionInline"/)
@@ -238,16 +299,17 @@ describe('Errors', () => {
   it('bad envelope union', () => {
     assert.throws(() => create({
       types: {
-        Bar: { kind: 'bool' },
-        Baz: { kind: 'string' },
-        Foo: { kind: 'int' },
+        Bar: { bool: {} },
+        Baz: { string: {} },
+        Foo: { int: {} },
         UnionEnvelope: {
-          kind: 'union',
-          representation: {
-            // @ts-ignore
-            envelope: {
-              discriminantKey: 'bim',
-              contentKey: 'bam'
+          union: {
+            representation: {
+              // @ts-ignore
+              envelope: {
+                discriminantKey: 'bim',
+                contentKey: 'bam'
+              }
             }
           }
         }
@@ -256,19 +318,20 @@ describe('Errors', () => {
 
     assert.throws(() => create({
       types: {
-        Bar: { kind: 'bool' },
-        Baz: { kind: 'string' },
-        Foo: { kind: 'int' },
+        Bar: { bool: {} },
+        Baz: { string: {} },
+        Foo: { int: {} },
         UnionEnvelope: {
-          kind: 'union',
-          representation: {
-            // @ts-ignore
-            envelope: {
-              contentKey: 'bim',
-              discriminantTable: {
-                foo: 'Foo',
-                bar: 'Bar',
-                baz: 'Baz'
+          union: {
+            representation: {
+              // @ts-ignore
+              envelope: {
+                contentKey: 'bim',
+                discriminantTable: {
+                  foo: 'Foo',
+                  bar: 'Bar',
+                  baz: 'Baz'
+                }
               }
             }
           }
@@ -278,19 +341,20 @@ describe('Errors', () => {
 
     assert.throws(() => create({
       types: {
-        Bar: { kind: 'bool' },
-        Baz: { kind: 'string' },
-        Foo: { kind: 'int' },
+        Bar: { bool: {} },
+        Baz: { string: {} },
+        Foo: { int: {} },
         UnionEnvelope: {
-          kind: 'union',
-          representation: {
-            // @ts-ignore
-            envelope: {
-              discriminantKey: 'bim',
-              discriminantTable: {
-                foo: 'Foo',
-                bar: 'Bar',
-                baz: 'Baz'
+          union: {
+            representation: {
+              // @ts-ignore
+              envelope: {
+                discriminantKey: 'bim',
+                discriminantTable: {
+                  foo: 'Foo',
+                  bar: 'Bar',
+                  baz: 'Baz'
+                }
               }
             }
           }
@@ -302,17 +366,18 @@ describe('Errors', () => {
   it('bad union type name', () => {
     assert.throws(() => create({
       types: {
-        Bar: { kind: 'bool' },
-        Baz: { kind: 'string' },
-        Foo: { kind: 'int' },
+        Bar: { bool: {} },
+        Baz: { string: {} },
+        Foo: { int: {} },
         UnionKinded: {
-          kind: 'union',
-          representation: {
-            kinded: {
-              map: 'Foo',
-              list: 'Bar',
-              // @ts-ignore
-              int: {}
+          union: {
+            representation: {
+              kinded: {
+                map: 'Foo',
+                list: 'Bar',
+                // @ts-ignore
+                int: {}
+              }
             }
           }
         }
@@ -323,14 +388,15 @@ describe('Errors', () => {
     assert.throws(() => create({
       types: {
         UnionKeyed: {
-          kind: 'union',
-          representation: {
-            // @ts-ignore
-            keyed: {
-              bar: 'Bool',
-              foo: 'Int',
+          union: {
+            representation: {
               // @ts-ignore
-              baz: ['nope']
+              keyed: {
+                bar: 'Bool',
+                foo: 'Int',
+                // @ts-ignore
+                baz: ['nope']
+              }
             }
           }
         }
@@ -340,52 +406,56 @@ describe('Errors', () => {
     assert.throws(() => create({
       types: {
         UnionInline: {
-          kind: 'union',
-          representation: {
-            inline: {
-              discriminantKey: 'tag',
-              // @ts-ignore
-              discriminantTable: {
-                foo: 'Foo',
+          union: {
+            representation: {
+              inline: {
+                discriminantKey: 'tag',
                 // @ts-ignore
-                bar: 100
+                discriminantTable: {
+                  foo: 'Foo',
+                  // @ts-ignore
+                  bar: 100
+                }
               }
             }
           }
         },
         Foo: {
-          kind: 'struct',
-          fields: {
-            froz: { type: 'Bool' }
-          },
-          representation: { map: {} }
+          struct: {
+            fields: {
+              froz: { type: 'Bool' }
+            },
+            representation: { map: {} }
+          }
         },
         Bar: {
-          kind: 'struct',
-          fields: {
-            bral: { type: 'String' }
-          },
-          representation: { map: {} }
+          struct: {
+            fields: {
+              bral: { type: 'String' }
+            },
+            representation: { map: {} }
+          }
         }
       }
     }, 'UnionInline'), /Inline union "UnionInline refers to non-string type name: 100/)
 
     assert.throws(() => create({
       types: {
-        Bar: { kind: 'bool' },
-        Baz: { kind: 'string' },
-        Foo: { kind: 'int' },
+        Bar: { bool: {} },
+        Baz: { string: {} },
+        Foo: { int: {} },
         UnionEnvelope: {
-          kind: 'union',
-          representation: {
-            envelope: {
-              discriminantKey: 'bim',
-              contentKey: 'bam',
-              discriminantTable: {
-                foo: 'Foo',
-                // @ts-ignore
-                bar: true,
-                baz: 'Baz'
+          union: {
+            representation: {
+              envelope: {
+                discriminantKey: 'bim',
+                contentKey: 'bam',
+                discriminantTable: {
+                  foo: 'Foo',
+                  // @ts-ignore
+                  bar: true,
+                  baz: 'Baz'
+                }
               }
             }
           }
@@ -394,32 +464,38 @@ describe('Errors', () => {
     }, 'UnionEnvelope'), /Envelope union "UnionEnvelope refers to non-string type name: true/)
   })
 
-  it('bad byteprefix byte', () => {
+  it('bad bytesprefix byte', () => {
     assert.throws(() => create({
       types: {
-        Bls12_381Signature: { kind: 'bytes' },
-        Secp256k1Signature: { kind: 'bytes' },
+        Bls12_381Signature: { bytes: {} },
+        Secp256k1Signature: { bytes: {} },
         Signature: {
-          kind: 'union',
-          representation: {
-            byteprefix: {
-              Secp256k1Signature: 0,
-              Bls12_381Signature: -1
+          union: {
+            members: [
+              'Secp256k1Signature',
+              'Bls12_381Signature'
+            ],
+            representation: {
+              bytesprefix: {
+                Secp256k1Signature: '0',
+                Bls12_381Signature: '-1'
+              }
             }
           }
         }
       }
-    }, 'Signature'), /Invalid byteprefix byte for "Signature": "-1"/)
+    }, 'Signature'), /Invalid bytesprefix byte for "Signature": "-1"/)
   })
 
   it('bad union type', () => {
     assert.throws(() => create({
       types: {
         UnionKeyed: {
-          kind: 'union',
-          representation: {
-            // @ts-ignore
-            blip: { }
+          union: {
+            representation: {
+              // @ts-ignore
+              blip: { }
+            }
           }
         }
       }
@@ -429,9 +505,9 @@ describe('Errors', () => {
   it('bad enum descriptor', () => {
     assert.throws(() => create({
       types: {
-        // @ts-ignore
         SimpleEnum: {
-          kind: 'enum'
+          // @ts-ignore
+          enum: {}
         }
       }
     }, 'SimpleEnum'), /Enum needs a "members" list/)
@@ -441,17 +517,18 @@ describe('Errors', () => {
     assert.throws(() => create({
       types: {
         SimpleEnum: {
-          kind: 'enum',
-          members: {
-            Foo: null,
-            Bar: null,
-            Baz: null
-          },
-          representation: {
-            string: {
-              Foo: 'str',
-              // @ts-ignore
-              Bar: 0
+          enum: {
+            members: [
+              'Foo',
+              'Bar',
+              'Baz'
+            ],
+            representation: {
+              string: {
+                Foo: 'str',
+                // @ts-ignore
+                Bar: 0
+              }
             }
           }
         }
@@ -463,17 +540,18 @@ describe('Errors', () => {
     assert.throws(() => create({
       types: {
         SimpleEnum: {
-          kind: 'enum',
-          members: {
-            Foo: null,
-            Bar: null,
-            Baz: null
-          },
-          representation: {
-            int: {
-              // @ts-ignore
-              Foo: 'str',
-              Bar: 0
+          enum: {
+            members: [
+              'Foo',
+              'Bar',
+              'Baz'
+            ],
+            representation: {
+              int: {
+                // @ts-ignore
+                Foo: 'str',
+                Bar: 0
+              }
             }
           }
         }
@@ -484,13 +562,14 @@ describe('Errors', () => {
   it('no enum representation', () => {
     assert.throws(() => create({
       types: {
-        // @ts-ignore
         SimpleEnum: {
-          kind: 'enum',
-          members: {
-            Foo: null,
-            Bar: null,
-            Baz: null
+          // @ts-ignore
+          enum: {
+            members: [
+              'Foo',
+              'Bar',
+              'Baz'
+            ]
           }
         }
       }
@@ -501,15 +580,16 @@ describe('Errors', () => {
     assert.throws(() => create({
       types: {
         SimpleEnum: {
-          kind: 'enum',
-          members: {
-            Foo: null,
-            Bar: null,
-            Baz: null
-          },
-          representation: {
-            // @ts-ignore
-            nope: {}
+          enum: {
+            members: [
+              'Foo',
+              'Bar',
+              'Baz'
+            ],
+            representation: {
+              // @ts-ignore
+              nope: {}
+            }
           }
         }
       }

@@ -103,8 +103,9 @@ describe('List types', () => {
     const validator = create({
       types: {
         $list: {
-          kind: 'list',
-          valueType: 'String'
+          list: {
+            valueType: 'String'
+          }
         }
       }
     }, '$list')
@@ -125,8 +126,9 @@ describe('List types', () => {
     const validator = create({
       types: {
         $list: {
-          kind: 'list',
-          valueType: 'Int'
+          list: {
+            valueType: 'Int'
+          }
         }
       }
     }, '$list')
@@ -147,9 +149,10 @@ describe('List types', () => {
     const validator = create({
       types: {
         $list: {
-          kind: 'list',
-          valueType: 'String',
-          valueNullable: true
+          list: {
+            valueType: 'String',
+            valueNullable: true
+          }
         }
       }
     }, '$list')
@@ -173,8 +176,9 @@ describe('List types', () => {
     const validator = create({
       types: {
         $list: {
-          kind: 'list',
-          valueType: { kind: 'link' }
+          list: {
+            valueType: { link: {} }
+          }
         }
       }
     }, '$list')
@@ -197,9 +201,10 @@ describe('Map types', () => {
     const validator = create({
       types: {
         $map: {
-          kind: 'map',
-          keyType: 'String',
-          valueType: 'String'
+          map: {
+            keyType: 'String',
+            valueType: 'String'
+          }
         }
       }
     }, '$map')
@@ -221,9 +226,10 @@ describe('Map types', () => {
     const validator = create({
       types: {
         $map: {
-          kind: 'map',
-          keyType: 'String',
-          valueType: 'Int'
+          map: {
+            keyType: 'String',
+            valueType: 'Int'
+          }
         }
       }
     }, '$map')
@@ -245,9 +251,10 @@ describe('Map types', () => {
     const validator = create({
       types: {
         $map: {
-          kind: 'map',
-          keyType: 'String',
-          valueType: { kind: 'link' }
+          map: {
+            keyType: 'String',
+            valueType: { link: {} }
+          }
         }
       }
     }, '$map')
@@ -269,10 +276,11 @@ describe('Map types', () => {
     const validator = create({
       types: {
         $map: {
-          kind: 'map',
-          keyType: 'String',
-          valueType: 'Int',
-          valueNullable: true
+          map: {
+            keyType: 'String',
+            valueType: 'Int',
+            valueNullable: true
+          }
         }
       }
     }, '$map')
@@ -299,10 +307,11 @@ describe('Map types', () => {
     const validator = create({
       types: {
         MapAsListpairs: {
-          kind: 'map',
-          keyType: 'String',
-          valueType: 'String',
-          representation: { listpairs: {} }
+          map: {
+            keyType: 'String',
+            valueType: 'String',
+            representation: { listpairs: {} }
+          }
         }
       }
     }, 'MapAsListpairs')

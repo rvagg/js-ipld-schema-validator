@@ -13,13 +13,14 @@ describe('Structs', () => {
     const validator = create({
       types: {
         SimpleStruct: {
-          kind: 'struct',
-          fields: {
-            foo: { type: 'Int' },
-            bar: { type: 'Bool' },
-            baz: { type: 'String' }
-          },
-          representation: { map: {} }
+          struct: {
+            fields: {
+              foo: { type: 'Int' },
+              bar: { type: 'Bool' },
+              baz: { type: 'String' }
+            },
+            representation: { map: {} }
+          }
         }
       }
     }, 'SimpleStruct')
@@ -36,22 +37,24 @@ describe('Structs', () => {
     const validator = create({
       types: {
         $struct2: {
-          kind: 'struct',
-          fields: {
-            foo: { type: 'Int' },
-            bar: { type: 'Bool' },
-            baz: { type: 'String' }
-          },
-          representation: { map: {} }
+          struct: {
+            fields: {
+              foo: { type: 'Int' },
+              bar: { type: 'Bool' },
+              baz: { type: 'String' }
+            },
+            representation: { map: {} }
+          }
         },
         $struct1: {
-          kind: 'struct',
-          fields: {
-            one: { type: 'Int' },
-            two: { type: '$struct2' },
-            three: { type: 'Link' }
-          },
-          representation: { map: {} }
+          struct: {
+            fields: {
+              one: { type: 'Int' },
+              two: { type: '$struct2' },
+              three: { type: 'Link' }
+            },
+            representation: { map: {} }
+          }
         }
       }
     }, '$struct1')
@@ -82,31 +85,35 @@ describe('Structs', () => {
     const validator = create({
       types: {
         $list: {
-          kind: 'list',
-          valueType: { kind: 'link' }
+          list: {
+            valueType: { link: {} }
+          }
         },
         $map: {
-          kind: 'map',
-          keyType: 'String',
-          valueType: '$list'
+          map: {
+            keyType: 'String',
+            valueType: '$list'
+          }
         },
         $struct2: {
-          kind: 'struct',
-          fields: {
-            foo: { type: 'Int' },
-            bar: { type: 'Bool' },
-            baz: { type: '$list' }
-          },
-          representation: { map: {} }
+          struct: {
+            fields: {
+              foo: { type: 'Int' },
+              bar: { type: 'Bool' },
+              baz: { type: '$list' }
+            },
+            representation: { map: {} }
+          }
         },
         $struct1: {
-          kind: 'struct',
-          fields: {
-            one: { type: '$map' },
-            two: { type: '$struct2' },
-            three: { type: 'Link' }
-          },
-          representation: { map: {} }
+          struct: {
+            fields: {
+              one: { type: '$map' },
+              two: { type: '$struct2' },
+              three: { type: 'Link' }
+            },
+            representation: { map: {} }
+          }
         }
       }
     }, '$struct1')
@@ -133,13 +140,14 @@ describe('Structs', () => {
     const validator = create({
       types: {
         SimpleStruct: {
-          kind: 'struct',
-          fields: {
-            foo: { type: 'Int' },
-            bar: { type: 'Bool' },
-            baz: { type: 'String' }
-          },
-          representation: { tuple: {} }
+          struct: {
+            fields: {
+              foo: { type: 'Int' },
+              bar: { type: 'Bool' },
+              baz: { type: 'String' }
+            },
+            representation: { tuple: {} }
+          }
         }
       }
     }, 'SimpleStruct')
@@ -160,21 +168,23 @@ describe('Structs', () => {
     const validator = create({
       types: {
         $struct: {
-          kind: 'struct',
-          fields: {
-            foo: { type: 'Int' },
-            bar: { type: 'Bool' },
-            baz: { type: 'String' }
-          },
-          representation: { map: {} }
+          struct: {
+            fields: {
+              foo: { type: 'Int' },
+              bar: { type: 'Bool' },
+              baz: { type: 'String' }
+            },
+            representation: { map: {} }
+          }
         },
         SimpleStruct: {
-          kind: 'struct',
-          fields: {
-            foo: { type: '$struct' },
-            bar: { type: '$struct' }
-          },
-          representation: { tuple: {} }
+          struct: {
+            fields: {
+              foo: { type: '$struct' },
+              bar: { type: '$struct' }
+            },
+            representation: { tuple: {} }
+          }
         }
       }
     }, 'SimpleStruct')
@@ -187,13 +197,14 @@ describe('Structs', () => {
     const validator = create({
       types: {
         SimpleStruct: {
-          kind: 'struct',
-          fields: {
-            foo: { type: 'Int', nullable: true },
-            bar: { type: 'Bool' },
-            baz: { type: 'String', nullable: true }
-          },
-          representation: { map: {} }
+          struct: {
+            fields: {
+              foo: { type: 'Int', nullable: true },
+              bar: { type: 'Bool' },
+              baz: { type: 'String', nullable: true }
+            },
+            representation: { map: {} }
+          }
         }
       }
     }, 'SimpleStruct')
@@ -215,13 +226,14 @@ describe('Structs', () => {
     const validator = create({
       types: {
         SimpleStruct: {
-          kind: 'struct',
-          fields: {
-            foo: { type: 'Int', nullable: true },
-            bar: { type: 'Bool' },
-            baz: { type: 'String', nullable: true }
-          },
-          representation: { tuple: {} }
+          struct: {
+            fields: {
+              foo: { type: 'Int', nullable: true },
+              bar: { type: 'Bool' },
+              baz: { type: 'String', nullable: true }
+            },
+            representation: { tuple: {} }
+          }
         }
       }
     }, 'SimpleStruct')
@@ -243,13 +255,14 @@ describe('Structs', () => {
     const validator = create({
       types: {
         SimpleStruct: {
-          kind: 'struct',
-          fields: {
-            foo: { type: 'Int', optional: true },
-            bar: { type: 'Bool' },
-            baz: { type: 'String', optional: true }
-          },
-          representation: { map: {} }
+          struct: {
+            fields: {
+              foo: { type: 'Int', optional: true },
+              bar: { type: 'Bool' },
+              baz: { type: 'String', optional: true }
+            },
+            representation: { map: {} }
+          }
         }
       }
     }, 'SimpleStruct')
@@ -279,46 +292,52 @@ describe('Structs', () => {
     const validator = create({
       types: {
         StructWithAnonymousTypes: {
-          kind: 'struct',
-          fields: {
-            fooField: {
-              type: {
-                kind: 'map',
-                keyType: 'String',
-                valueType: 'String'
+          struct: {
+            fields: {
+              fooField: {
+                type: {
+                  map: {
+                    keyType: 'String',
+                    valueType: 'String'
+                  }
+                },
+                optional: true
               },
-              optional: true
-            },
-            barField: {
-              type: {
-                kind: 'map',
-                keyType: 'String',
-                valueType: 'String'
+              barField: {
+                type: {
+                  map: {
+                    keyType: 'String',
+                    valueType: 'String'
+                  }
+                },
+                nullable: true
               },
-              nullable: true
-            },
-            bazField: {
-              type: {
-                kind: 'map',
-                keyType: 'String',
-                valueType: 'String',
-                valueNullable: true
-              }
-            },
-            wozField: {
-              type: {
-                kind: 'map',
-                keyType: 'String',
-                valueType: {
-                  kind: 'list',
-                  valueType: 'String',
-                  valueNullable: true
+              bazField: {
+                type: {
+                  map: {
+                    keyType: 'String',
+                    valueType: 'String',
+                    valueNullable: true
+                  }
+                }
+              },
+              wozField: {
+                type: {
+                  map: {
+                    keyType: 'String',
+                    valueType: {
+                      list: {
+                        valueType: 'String',
+                        valueNullable: true
+                      }
+                    }
+                  }
                 }
               }
+            },
+            representation: {
+              map: {}
             }
-          },
-          representation: {
-            map: {}
           }
         }
       }
@@ -365,9 +384,10 @@ describe('Structs', () => {
     const validator = create({
       types: {
         StructEmpty: {
-          kind: 'struct',
-          fields: {},
-          representation: { map: {} }
+          struct: {
+            fields: {},
+            representation: { map: {} }
+          }
         }
       }
     }, 'StructEmpty')
@@ -392,19 +412,20 @@ describe('Structs', () => {
     const validator = create({
       types: {
         StructAsMapWithRenames: {
-          kind: 'struct',
-          fields: {
-            bar: { type: 'Bool' },
-            boom: { type: 'String' },
-            baz: { type: 'String' },
-            foo: { type: 'Int' }
-          },
-          representation: {
-            map: {
-              fields: {
-                bar: { rename: 'b' },
-                baz: { rename: 'z' },
-                foo: { rename: 'f' }
+          struct: {
+            fields: {
+              bar: { type: 'Bool' },
+              boom: { type: 'String' },
+              baz: { type: 'String' },
+              foo: { type: 'Int' }
+            },
+            representation: {
+              map: {
+                fields: {
+                  bar: { rename: 'b' },
+                  baz: { rename: 'z' },
+                  foo: { rename: 'f' }
+                }
               }
             }
           }
@@ -429,19 +450,20 @@ describe('Structs', () => {
     const validator = create({
       types: {
         StructAsMapWithImplicits: {
-          kind: 'struct',
-          fields: {
-            bar: { type: 'Bool' },
-            boom: { type: 'String' },
-            baz: { type: 'String' },
-            foo: { type: 'Int' }
-          },
-          representation: {
-            map: {
-              fields: {
-                bar: { implicit: false },
-                boom: { implicit: 'yay' },
-                foo: { implicit: '0' }
+          struct: {
+            fields: {
+              bar: { type: 'Bool' },
+              boom: { type: 'String' },
+              baz: { type: 'String' },
+              foo: { type: 'Int' }
+            },
+            representation: {
+              map: {
+                fields: {
+                  bar: { implicit: false },
+                  boom: { implicit: 'yay' },
+                  foo: { implicit: '0' }
+                }
               }
             }
           }
@@ -469,15 +491,16 @@ describe('Structs', () => {
     const validator = create({
       types: {
         StructAsTupleWithCustomFieldorder: {
-          kind: 'struct',
-          fields: {
-            foo: { type: 'Int' },
-            bar: { type: 'Bool' },
-            baz: { type: 'String' }
-          },
-          representation: {
-            tuple: {
-              fieldOrder: ['baz', 'bar', 'foo']
+          struct: {
+            fields: {
+              foo: { type: 'Int' },
+              bar: { type: 'Bool' },
+              baz: { type: 'String' }
+            },
+            representation: {
+              tuple: {
+                fieldOrder: ['baz', 'bar', 'foo']
+              }
             }
           }
         }

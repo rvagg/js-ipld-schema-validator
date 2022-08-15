@@ -13,13 +13,14 @@ describe('Enums', () => {
     const validator = create({
       types: {
         SimpleEnum: {
-          kind: 'enum',
-          members: {
-            Foo: null,
-            Bar: null,
-            Baz: null
-          },
-          representation: { string: {} }
+          enum: {
+            members: [
+              'Foo',
+              'Bar',
+              'Baz'
+            ],
+            representation: { string: {} }
+          }
         }
       }
     }, 'SimpleEnum')
@@ -38,16 +39,17 @@ describe('Enums', () => {
     const validator = create({
       types: {
         SimpleEnumWithValues: {
-          kind: 'enum',
-          members: {
-            Foo: null,
-            Bar: null,
-            Baz: null
-          },
-          representation: {
-            string: {
-              Foo: 'f',
-              Baz: 'b'
+          enum: {
+            members: [
+              'Foo',
+              'Bar',
+              'Baz'
+            ],
+            representation: {
+              string: {
+                Foo: 'f',
+                Baz: 'b'
+              }
             }
           }
         }
@@ -70,17 +72,18 @@ describe('Enums', () => {
     const validator = create({
       types: {
         SimpleEnum: {
-          kind: 'enum',
-          members: {
-            Foo: null,
-            Bar: null,
-            Baz: null
-          },
-          representation: {
-            int: {
-              Foo: 0,
-              Bar: 1,
-              Baz: 100
+          enum: {
+            members: [
+              'Foo',
+              'Bar',
+              'Baz'
+            ],
+            representation: {
+              int: {
+                Foo: 0,
+                Bar: 1,
+                Baz: 100
+              }
             }
           }
         }

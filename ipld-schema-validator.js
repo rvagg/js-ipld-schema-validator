@@ -1,13 +1,14 @@
 /* eslint-disable no-new-func */
 
 /**
- * @typedef {import('ipld-schema/schema-schema').EnumValue} EnumValue
+ * @typedef {import('ipld-schema/schema-schema').EnumMember} EnumMember
  * @typedef {import('ipld-schema/schema-schema').KindInt} KindInt
  * @typedef {import('ipld-schema/schema-schema').KindString} KindString
  * @typedef {import('ipld-schema/schema-schema').Schema} Schema
- * @typedef {import('ipld-schema/schema-schema').Type} Type
+ * @typedef {import('ipld-schema/schema-schema').TypeDefn} TypeDefn
+ * @typedef {import('ipld-schema/schema-schema').InlineDefn} InlineDefn
  * @typedef {import('ipld-schema/schema-schema').TypeName} TypeName
- * @typedef {import('ipld-schema/schema-schema').TypeTerm} TypeTerm
+ * @typedef {import('ipld-schema/schema-schema').TypeNameOrInlineDefn} TypeNameOrInlineDefn
  * @typedef {(obj:any)=>boolean} ValidatorFunction
  */
 
@@ -46,51 +47,73 @@ const ScalarKindNames = ['Null', 'Int', 'Float', 'String', 'Bool', 'Bytes', 'Lin
 const ScalarKindNamesLower = ScalarKindNames.map((n) => n.toLowerCase())
 // const TypeKindNames = ['string', 'bool', 'bytes', 'int', 'float', 'map', 'list', 'link', 'union', 'struct', 'enum', 'copy']
 
-/** @type {{ [ k in string]: Type }} */
+/** @type {{ [ k in string]: TypeDefn }} */
 const implicits = {
-  Null: /** @type {TypeNull} */ { kind: 'null' },
-  Int: /** @type {TypeInt} */ { kind: 'int' },
-  Float: /** @type {TypeFloat} */ { kind: 'float' },
-  String: /** @type {TypeString} */ { kind: 'string' },
-  Bool: /** @type {TypeBool} */ { kind: 'bool' },
-  Bytes: /** @type {TypeBytes} */ { kind: 'bytes' },
-  Link: /** @type {TypeLink} */ { kind: 'link' }
+  Null: /** @type {TypeDefnNull} */ { null: {} },
+  Int: /** @type {TypeDefnInt} */ { int: {} },
+  Float: /** @type {TypeDefnFloat} */ { float: {} },
+  String: /** @type {TypeDefnString} */ { string: {} },
+  Bool: /** @type {TypeDefnBool} */ { bool: {} },
+  Bytes: /** @type {TypeDefnBytes} */ { bytes: {} },
+  Link: /** @type {TypeDefnLink} */ { link: {} }
 }
 
-implicits.AnyScalar = /** @type {TypeUnion} */ {
-  kind: 'union',
-  representation: {
-    kinded: {
-      bool: 'Bool',
-      string: 'String',
-      bytes: 'Bytes',
-      int: 'Int',
-      float: 'Float'
+implicits.AnyScalar = /** @type {TypeDefnUnion} */ {
+  union: {
+    members: [
+      'Bool',
+      'String',
+      'Bytes',
+      'Int',
+      'Float'
+    ],
+    representation: {
+      kinded: {
+        bool: 'Bool',
+        string: 'String',
+        bytes: 'Bytes',
+        int: 'Int',
+        float: 'Float'
+      }
     }
   }
 }
-implicits.AnyMap = /** @type {TypeMap} */ {
-  kind: 'map',
-  keyType: 'String',
-  valueType: 'Any'
+implicits.AnyMap = /** @type {TypeDefnMap} */ {
+  map: {
+    keyType: 'String',
+    valueType: 'Any'
+  }
 }
-implicits.AnyList = /** @type {TypeList} */ {
-  kind: 'list',
-  valueType: 'Any'
+implicits.AnyList = /** @type {TypeDefnList} */ {
+  list: {
+    valueType: 'Any'
+  }
 }
-implicits.Any = /** @type {TypeUnion} */ {
-  kind: 'union',
-  representation: {
-    kinded: {
-      bool: 'Bool',
-      string: 'String',
-      bytes: 'Bytes',
-      int: 'Int',
-      float: 'Float',
-      null: 'Null',
-      link: 'Link',
-      map: 'AnyMap',
-      list: 'AnyList'
+implicits.Any = /** @type {TypeDefnUnion} */ {
+  union: {
+    members: [
+      'Bool',
+      'String',
+      'Bytes',
+      'Int',
+      'Float',
+      'Null',
+      'Link',
+      'AnyMap',
+      'AnyList'
+    ],
+    representation: {
+      kinded: {
+        bool: 'Bool',
+        string: 'String',
+        bytes: 'Bytes',
+        int: 'Int',
+        float: 'Float',
+        null: 'Null',
+        link: 'Link',
+        map: 'AnyMap',
+        list: 'AnyList'
+      }
     }
   }
 }
@@ -153,7 +176,7 @@ export class Builder {
 
   /**
    * @param {TypeName} typeName
-   * @param {Type} [typeDef]
+   * @param {TypeDefn} [typeDef]
    * @returns {void}
    */
   addType (typeName, typeDef) {
@@ -167,23 +190,26 @@ export class Builder {
       this.typeValidators[typeName] = '() => false'
     }
 
-    if (typeDef === undefined && typeName in this.schema.types && typeof this.schema.types[typeName] === 'object') {
+    if (typeDef === undefined && typeName in this.schema.types && this.schema.types[typeName] !== undefined) {
       typeDef = this.schema.types[typeName]
     }
     if (typeDef === undefined) {
       throw new TypeError(`A type must match an existing type definition ("${typeName}")`)
     }
+    if (Array.isArray(typeDef) || typeDef == null || typeof typeDef !== 'object') {
+      throw new TypeError(`Malformed type definition: not an object: ("${typeName}")`)
+    }
 
-    if (typeof typeDef === 'object' &&
-        typeof typeDef.kind === 'string' &&
-        ScalarKindNamesLower.includes(typeDef.kind)) {
-      this.typeValidators[typeName] = `Kinds.${tc(typeDef.kind)}`
+    const kind = typeKind(typeDef, typeName)
+
+    if (ScalarKindNamesLower.includes(kind)) {
+      this.typeValidators[typeName] = `Kinds.${tc(kind)}`
       return
     }
 
     /**
-     * @param {TypeTerm|string} defType
-     * @param {string} name
+     * @param {TypeNameOrInlineDefn} defType
+     * @param {TypeName} name
      * @returns {string}
      */
     const defineType = (defType, name) => {
@@ -191,21 +217,22 @@ export class Builder {
         throw new Error(`Recursive typedef in type "${typeName}"`)
       }
       let innerTypeName = defType
-      if (typeof innerTypeName === 'object' && typeof defType !== 'string' && defType.kind) { // anonymous inline map or list!
+      if (typeof innerTypeName === 'string') {
+        this.addType(innerTypeName)
+      } else if (defType != null && !Array.isArray(defType) && typeof defType === 'object') { // anonymous inline map or list!
+        typeKind(defType, name) // called for check
         innerTypeName = `${typeName} > ${name} (anon)`
         this.addType(innerTypeName, defType)
-      } else if (typeof innerTypeName === 'string') {
-        this.addType(innerTypeName)
       } else {
         throw new Error(`Bad type for "${name}" in "${typeName}"`)
       }
       return innerTypeName
     }
 
-    if (typeDef.kind === 'list') {
-      const valueTypeName = defineType(typeDef.valueType, 'valueType')
+    if ('list' in typeDef) {
+      const valueTypeName = defineType(typeDef.list.valueType, 'valueType')
       let valueValidator = `Types${safeReference(valueTypeName)}`
-      if (typeDef.valueNullable === true) {
+      if (typeDef.list.valueNullable === true) {
         valueValidator = `(v) => v === null || ${valueValidator}(v)`
       }
       this.typeValidators[typeName] = `/** @returns {boolean} */ (/** @type {any} */ obj) => Kinds.List(obj) && Array.prototype.every.call(obj, ${valueValidator})`
@@ -213,23 +240,23 @@ export class Builder {
       return
     }
 
-    if (typeDef.kind === 'map') {
-      if (typeDef.keyType !== 'String') {
-        throw new Error(`Invalid keyType for Map "${typeName}", expected String, found "${typeDef.keyType}"`)
+    if ('map' in typeDef) {
+      if (typeDef.map.keyType !== 'String') {
+        throw new Error(`Invalid keyType for Map "${typeName}", expected String, found "${typeDef.map.keyType}"`)
       }
 
       let representation = 'map'
-      if (typeDef.representation !== undefined) {
-        if ('listpairs' in typeDef.representation && typeof typeDef.representation.listpairs === 'object') {
+      if (typeDef.map.representation !== undefined) {
+        if ('listpairs' in typeDef.map.representation && typeof typeDef.map.representation.listpairs === 'object') {
           representation = 'listpairs'
-        } else if (!('map' in typeDef.representation) || typeof typeDef.representation.map !== 'object') {
-          throw new Error(`Unsupported map representation "${Object.keys(typeDef.representation).join(',')}"`)
+        } else if (!('map' in typeDef.map.representation) || typeof typeDef.map.representation.map !== 'object') {
+          throw new Error(`Unsupported map representation "${Object.keys(typeDef.map.representation).join(',')}"`)
         }
       }
 
-      const valueTypeName = defineType(typeDef.valueType, 'valueType')
+      const valueTypeName = defineType(typeDef.map.valueType, 'valueType')
       let valueValidator = `Types${safeReference(valueTypeName)}`
-      if (typeDef.valueNullable === true) {
+      if (typeDef.map.valueNullable === true) {
         valueValidator = `(v) => v === null || ${valueValidator}(v)`
       }
 
@@ -243,29 +270,29 @@ export class Builder {
       return
     }
 
-    if (typeDef.kind === 'struct') {
+    if ('struct' in typeDef) {
       let representation = 'map'
-      if (typeDef.representation !== undefined) {
-        if ('tuple' in typeDef.representation && typeof typeDef.representation.tuple === 'object') {
+      if (typeDef.struct.representation !== undefined) {
+        if ('tuple' in typeDef.struct.representation && typeof typeDef.struct.representation.tuple === 'object') {
           representation = 'tuple'
-        } else if (!('map' in typeDef.representation) || typeof typeDef.representation.map !== 'object') {
-          throw new Error(`Unsupported struct representation for "${typeName}": "${Object.keys(typeDef.representation).join(',')}"`)
+        } else if (!('map' in typeDef.struct.representation) || typeof typeDef.struct.representation.map !== 'object') {
+          throw new Error(`Unsupported struct representation for "${typeName}": "${Object.keys(typeDef.struct.representation).join(',')}"`)
         }
       }
 
       let requiredFields = []
-      for (let [fieldName, fieldDef] of Object.entries(typeDef.fields)) {
+      for (let [fieldName, fieldDef] of Object.entries(typeDef.struct.fields)) {
         let required = representation !== 'map' || fieldDef.optional !== true
 
-        if (typeDef.representation !== undefined &&
-            'map' in typeDef.representation &&
-            typeof typeDef.representation.map === 'object' &&
-            typeof typeDef.representation.map.fields === 'object' &&
-            typeof typeDef.representation.map.fields[fieldName] === 'object') {
-          if (typeDef.representation.map.fields[fieldName].implicit !== undefined) {
+        if (typeDef.struct.representation !== undefined &&
+            'map' in typeDef.struct.representation &&
+            typeof typeDef.struct.representation.map === 'object' &&
+            typeof typeDef.struct.representation.map.fields === 'object' &&
+            typeof typeDef.struct.representation.map.fields[fieldName] === 'object') {
+          if (typeDef.struct.representation.map.fields[fieldName].implicit !== undefined) {
             required = false
           }
-          const fieldDef = typeDef.representation.map.fields[fieldName]
+          const fieldDef = typeDef.struct.representation.map.fields[fieldName]
           if (typeof fieldDef.rename === 'string') {
             fieldName = fieldDef.rename
           }
@@ -287,10 +314,10 @@ export class Builder {
       }
 
       if (representation === 'tuple') {
-        if (typeDef.representation &&
-            'tuple' in typeDef.representation &&
-            Array.isArray(typeDef.representation.tuple.fieldOrder)) {
-          requiredFields = typeDef.representation.tuple.fieldOrder
+        if (typeDef.struct.representation &&
+            'tuple' in typeDef.struct.representation &&
+            Array.isArray(typeDef.struct.representation.tuple.fieldOrder)) {
+          requiredFields = typeDef.struct.representation.tuple.fieldOrder
         }
         this.typeValidators[typeName] = `/** @returns {boolean} */ (/** @type {any} */ obj) => Kinds.List(obj) && obj.length === ${requiredFields.length}${requiredFields.map((fieldName, i) => ` && Types['${typeName} > ${fieldName}'](obj[${i}])`).join('')}`
       } else {
@@ -300,13 +327,13 @@ export class Builder {
       return
     }
 
-    if (typeDef.kind === 'union') {
-      if (typeof typeDef.representation !== 'object') {
+    if ('union' in typeDef) {
+      if (typeof typeDef.union.representation !== 'object') {
         throw new Error(`Bad union definition for "${typeName}"`)
       }
 
-      if ('keyed' in typeDef.representation && typeof typeDef.representation.keyed === 'object') {
-        const keys = typeDef.representation.keyed
+      if ('keyed' in typeDef.union.representation && typeof typeDef.union.representation.keyed === 'object') {
+        const keys = typeDef.union.representation.keyed
         const validators = Object.entries(keys).map(([key, innerTypeName]) => {
           if (typeof innerTypeName !== 'string') {
             throw new Error(`Keyed union "${typeName} refers to non-string type name: ${JSON.stringify(innerTypeName)}`)
@@ -320,12 +347,13 @@ export class Builder {
         return
       }
 
-      if ('kinded' in typeDef.representation && typeof typeDef.representation.kinded === 'object') {
-        const kinds = typeDef.representation.kinded
+      if ('kinded' in typeDef.union.representation && typeof typeDef.union.representation.kinded === 'object') {
+        const kinds = typeDef.union.representation.kinded
         const validators = Object.entries(kinds).map(([kind, innerTypeName]) => {
-          if (typeof innerTypeName === 'object' && innerTypeName.kind === 'link') {
+          if (typeof innerTypeName === 'object' && 'link' in innerTypeName && typeof innerTypeName.link === 'object') {
             const defn = innerTypeName
-            innerTypeName = `${typeName} > ${innerTypeName.expectedType} (anon)`
+            const et = 'expectedType' in innerTypeName.link ? innerTypeName.link.expectedType : 'Any'
+            innerTypeName = `${typeName} > ${et} (anon)`
             this.addType(innerTypeName, defn)
           }
           if (typeof innerTypeName !== 'string') {
@@ -343,8 +371,8 @@ export class Builder {
         return
       }
 
-      if ('inline' in typeDef.representation && typeof typeDef.representation.inline === 'object') {
-        const inline = typeDef.representation.inline
+      if ('inline' in typeDef.union.representation && typeof typeDef.union.representation.inline === 'object') {
+        const inline = typeDef.union.representation.inline
         if (typeof inline.discriminantKey !== 'string') {
           throw new Error(`Expected "discriminantKey" for inline union "${typeName}"`)
         }
@@ -363,8 +391,8 @@ export class Builder {
         return
       }
 
-      if ('envelope' in typeDef.representation && typeof typeDef.representation.envelope === 'object') {
-        const envelope = typeDef.representation.envelope
+      if ('envelope' in typeDef.union.representation && typeof typeDef.union.representation.envelope === 'object') {
+        const envelope = typeDef.union.representation.envelope
         if (typeof envelope.discriminantKey !== 'string') {
           throw new Error(`Expected "discriminantKey" for envelope union "${typeName}"`)
         }
@@ -386,43 +414,43 @@ export class Builder {
         return
       }
 
-      if ('byteprefix' in typeDef.representation && typeof typeDef.representation.byteprefix === 'object') {
+      if ('bytesprefix' in typeDef.union.representation && typeof typeDef.union.representation.bytesprefix === 'object') {
         /** @type {number[]} */
-        const bytes = Object.values(typeDef.representation.byteprefix)
-        for (const byte of bytes) {
-          if (typeof byte !== 'number' || !Number.isInteger(byte) || byte < 0 || byte > 0xff) {
-            throw new Error(`Invalid byteprefix byte for "${typeName}": "${byte}"`)
+        const bytes = Object.values(typeDef.union.representation.bytesprefix).map((byte) => {
+          if (typeof byte !== 'string' || !/^[0-9a-f][0-9a-f]?$/.test(byte)) {
+            throw new Error(`Invalid bytesprefix byte for "${typeName}": "${byte}"`)
           }
-        }
+          return parseInt(byte, 16)
+        })
 
         this.typeValidators[typeName] = `/** @returns {boolean} */ (/** @type {any} */ obj) => { return Kinds.Bytes(obj) && obj.length >= 1 && ${fromArray(bytes)}.includes(obj[0]) }`
 
         return
       }
 
-      throw new Error(`Unsupported union type for "${typeName}": "${Object.keys(typeDef.representation).join(',')}"`)
+      throw new Error(`Unsupported union type for "${typeName}": "${Object.keys(typeDef.union.representation).join(',')}"`)
     }
 
-    if (typeDef.kind === 'enum') {
-      if (typeof typeDef.members !== 'object') {
+    if ('enum' in typeDef) {
+      if (!Array.isArray(typeDef.enum.members)) {
         throw new Error('Enum needs a "members" list')
       }
       /** @type {string[]|number[]}} */
       let values
       let representation = 'string'
-      if (typeof typeDef.representation === 'object') {
-        if ('string' in typeDef.representation && typeof typeDef.representation.string === 'object') {
-          const renames = typeDef.representation.string
-          values = Object.keys(typeDef.members).map((v) => {
+      if (typeof typeDef.enum.representation === 'object') {
+        if ('string' in typeDef.enum.representation && typeof typeDef.enum.representation.string === 'object') {
+          const renames = typeDef.enum.representation.string
+          values = typeDef.enum.members.map((v) => {
             v = renames[v] !== undefined ? renames[v] : v
             if (typeof v !== 'string') {
               throw new Error('Enum members must be strings')
             }
             return v
           })
-        } else if ('int' in typeDef.representation && typeof typeDef.representation.int === 'object') {
-          const renames = typeDef.representation.int
-          values = Object.keys(typeDef.members).map((v) => {
+        } else if ('int' in typeDef.enum.representation && typeof typeDef.enum.representation.int === 'object') {
+          const renames = typeDef.enum.representation.int
+          values = typeDef.enum.members.map((v) => {
             if (renames[v] === undefined || typeof renames[v] !== 'number' || !Number.isInteger(renames[v])) {
               throw new Error('Enum members must be ints')
             }
@@ -440,6 +468,22 @@ export class Builder {
       return
     }
 
-    throw new Error(`Can't deal with type kind: "${typeDef.kind}"`)
+    throw new Error(`Can't deal with type kind: "${kind}"`)
   }
+}
+
+/**
+ * @param {TypeDefn|InlineDefn} typeDef
+ * @param {TypeName} typeName
+ * @returns
+ */
+function typeKind (typeDef, typeName) {
+  const keys = Object.keys(typeDef)
+  if (!keys.length) {
+    throw new TypeError(`Malformed type definition: empty ("${typeName}")`)
+  }
+  if (keys.length > 1) {
+    throw new TypeError(`Malformed type definition: expected single kind key ("${typeName}")`)
+  }
+  return keys[0]
 }

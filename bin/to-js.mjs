@@ -4,6 +4,7 @@ import process from 'process'
 import { readFile } from 'fs/promises'
 import path from 'path'
 import { parse } from 'ipld-schema'
+// @ts-ignore
 import collectInput from 'ipld-schema/bin/collect-input.js'
 import { Builder, safeReference } from 'ipld-schema-validator'
 
@@ -17,23 +18,27 @@ async function version () {
 
 /**
  * @param {string[]} files
+ * @param {{ [k in 'type']: 'module'|'script'} | {}} [options]
  */
 export async function toJS (files, options) {
-  const input = await collectInput(files)
+  const input = /** @type {{ filename: string, contents: string }[]} */(await collectInput(files))
 
-  /** @type {Schema} */
-  let schema
+  /** @type {Schema|null} */
+  let schema = null
   for (const { filename, contents } of input) {
     try {
       const parsed = parse(contents)
-      if (schema === undefined) {
+      if (schema == null) {
         schema = parsed
       } else {
-        const copy = (/** @type {string} */ coll) => {
-          if (!parsed[coll]) {
+        const copy = (/** @type {'types'} */ coll) => {
+          if (schema == null) {
+            throw new Error('Unexpected state')
+          }
+          if (parsed[coll] == null) {
             return
           }
-          if (!schema[coll]) {
+          if (schema[coll] == null) {
             schema[coll] = {}
           }
           for (const [type, defn] of Object.entries(parsed[coll])) {
@@ -45,12 +50,17 @@ export async function toJS (files, options) {
           }
         }
         copy('types')
-        copy('advanced')
+        // TODO: ignoring for now, is it even useful? copy('advanced')
       }
     } catch (err) {
       console.error(`Error parsing ${filename}: ${err}}`)
       process.exit(1)
     }
+  }
+
+  if (schema == null) {
+    console.error('No input')
+    process.exit(1)
   }
 
   const builder = new Builder(schema)
@@ -62,7 +72,7 @@ export async function toJS (files, options) {
   console.log(`/** Auto-generated with ipld-schema-validator@${await version()} at ${new Date().toDateString()} from IPLD Schema:\n *\n${schemaContent}\n */\n`)
   console.log(builder.dumpValidators())
   for (const type of types) {
-    if (!options || options.type === 'module') {
+    if (options == null || !('type' in options) || options.type === 'module') {
       // cross fingers and hope `type` will be export name compatible!
       console.log(`export const ${type} = Types${safeReference(type)}`)
     } else if (options.type === 'script') {

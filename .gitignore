@@ -1,3 +1,6 @@
 node_modules/
 coverage/
 dist/
+types/test/
+types/bin/
+types/example*
