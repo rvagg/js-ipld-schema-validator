@@ -2,6 +2,7 @@
 
 import { create } from 'ipld-schema-validator'
 import chai from 'chai'
+import { lint } from './lint.js'
 
 const { assert } = chai
 
@@ -9,7 +10,7 @@ const fauxCid = {}
 fauxCid.asCID = fauxCid
 
 describe('Structs', () => {
-  it('struct with 3 different field kinds', () => {
+  it('struct with 3 different field kinds', async () => {
     const validator = create({
       types: {
         SimpleStruct: {
@@ -24,6 +25,9 @@ describe('Structs', () => {
         }
       }
     }, 'SimpleStruct')
+
+    await lint(validator)
+
     assert.isTrue(validator({ foo: 100, bar: true, baz: 'this is baz' }))
     assert.isFalse(validator({}))
     assert.isFalse(validator({ foo: 100, bar: true }))
@@ -33,7 +37,7 @@ describe('Structs', () => {
     assert.isFalse(validator([100, true, 'nope']))
   })
 
-  it('struct within a struct', () => {
+  it('struct within a struct', async () => {
     const validator = create({
       types: {
         $struct2: {
@@ -58,13 +62,16 @@ describe('Structs', () => {
         }
       }
     }, '$struct1')
+
+    await lint(validator)
+
     assert.isTrue(validator({ one: -1, two: { foo: 100, bar: true, baz: 'this is baz' }, three: fauxCid }))
     assert.isFalse(validator({}))
     assert.isFalse(validator({ one: -1, two: {}, three: fauxCid }))
     assert.isFalse(validator({ one: -1, two: [], three: fauxCid }))
   })
 
-  it('struct with maps and lists and structs', () => {
+  it('struct with maps and lists and structs', async () => {
     /*
     type $list [&Any]
 
@@ -117,6 +124,9 @@ describe('Structs', () => {
         }
       }
     }, '$struct1')
+
+    await lint(validator)
+
     assert.isTrue(validator({
       one: { o: [fauxCid], t: [], th: [fauxCid, fauxCid, fauxCid] },
       two: { foo: 100, bar: true, baz: [fauxCid, fauxCid, fauxCid] },
@@ -136,7 +146,7 @@ describe('Structs', () => {
     assert.isFalse(validator({}))
   })
 
-  it('struct with tuple representation', () => {
+  it('struct with tuple representation', async () => {
     const validator = create({
       types: {
         SimpleStruct: {
@@ -151,6 +161,9 @@ describe('Structs', () => {
         }
       }
     }, 'SimpleStruct')
+
+    await lint(validator)
+
     assert.isTrue(validator([100, true, 'this is baz']))
     assert.isFalse(validator({ foo: 100, bar: true, baz: 'this is baz' }))
     assert.isFalse(validator([]))
@@ -164,7 +177,7 @@ describe('Structs', () => {
     assert.isFalse(validator([100, 'nope', true]))
   })
 
-  it('struct with tuple representation containing structs', () => {
+  it('struct with tuple representation containing structs', async () => {
     const validator = create({
       types: {
         $struct: {
@@ -188,12 +201,15 @@ describe('Structs', () => {
         }
       }
     }, 'SimpleStruct')
+
+    await lint(validator)
+
     assert.isTrue(validator([{ foo: 100, bar: true, baz: 'this is baz' }, { foo: -1100, bar: false, baz: '' }]))
     assert.isFalse(validator([{}, {}]))
     assert.isFalse(validator([]))
   })
 
-  it('struct nullables', () => {
+  it('struct nullables', async () => {
     const validator = create({
       types: {
         SimpleStruct: {
@@ -208,6 +224,9 @@ describe('Structs', () => {
         }
       }
     }, 'SimpleStruct')
+
+    await lint(validator)
+
     assert.isTrue(validator({ foo: 100, bar: true, baz: 'this is baz' }))
     assert.isFalse(validator({}))
     assert.isFalse(validator({ foo: 100, bar: true }))
@@ -222,7 +241,7 @@ describe('Structs', () => {
     assert.isTrue(validator({ foo: null, bar: true, baz: null }))
   })
 
-  it('struct tuple nullables', () => {
+  it('struct tuple nullables', async () => {
     const validator = create({
       types: {
         SimpleStruct: {
@@ -237,6 +256,9 @@ describe('Structs', () => {
         }
       }
     }, 'SimpleStruct')
+
+    await lint(validator)
+
     assert.isTrue(validator([100, true, 'this is baz']))
     assert.isFalse(validator([]))
     assert.isFalse(validator([100, true]))
@@ -251,7 +273,7 @@ describe('Structs', () => {
     assert.isTrue(validator([null, true, null]))
   })
 
-  it('struct optionals', () => {
+  it('struct optionals', async () => {
     const validator = create({
       types: {
         SimpleStruct: {
@@ -266,6 +288,9 @@ describe('Structs', () => {
         }
       }
     }, 'SimpleStruct')
+
+    await lint(validator)
+
     assert.isTrue(validator({ foo: 100, bar: true, baz: 'this is baz' }))
     assert.isFalse(validator({}))
     assert.isTrue(validator({ foo: 100, bar: true }))
@@ -280,7 +305,7 @@ describe('Structs', () => {
     assert.isTrue(validator({ bar: true }))
   })
 
-  it('struct with anonymous types', () => {
+  it('struct with anonymous types', async () => {
     /*
       type StructWithAnonymousTypes struct {
         fooField optional {String:String}
@@ -343,6 +368,8 @@ describe('Structs', () => {
       }
     }, 'StructWithAnonymousTypes')
 
+    await lint(validator)
+
     assert.isFalse(validator({}))
 
     assert.isTrue(validator({
@@ -380,7 +407,7 @@ describe('Structs', () => {
     }))
   })
 
-  it('empty struct', () => {
+  it('empty struct', async () => {
     const validator = create({
       types: {
         StructEmpty: {
@@ -392,6 +419,8 @@ describe('Structs', () => {
       }
     }, 'StructEmpty')
 
+    await lint(validator)
+
     for (const obj of [101, 1.01, 'a string', false, true, fauxCid, Uint8Array.from([1, 2, 3]), [1, 2, 3], null, undefined]) {
       assert.isFalse(validator(obj))
     }
@@ -400,7 +429,7 @@ describe('Structs', () => {
     assert.isFalse(validator({ a: 1 }))
   })
 
-  it('empty struct', () => {
+  it('empty struct', async () => {
     /*
       type StructAsMapWithRenames struct {
         bar Bool (rename "b")
@@ -433,12 +462,14 @@ describe('Structs', () => {
       }
     }, 'StructAsMapWithRenames')
 
+    await lint(validator)
+
     assert.isFalse(validator({ bar: true, boom: 'str', baz: 'str', foo: 100 }))
     assert.isFalse(validator({ bar: true, boom: 'str', baz: 'str', b: 'str', z: 'str', f: 100, foo: 100 }))
     assert.isTrue(validator({ b: true, boom: 'str', z: 'str', f: 100 }))
   })
 
-  it('empty struct', () => {
+  it('empty struct', async () => {
     /*
       type StructAsMapWithImplicits struct {
         bar Bool (implicit "false")
@@ -471,6 +502,8 @@ describe('Structs', () => {
       }
     }, 'StructAsMapWithImplicits')
 
+    await lint(validator)
+
     assert.isTrue(validator({ bar: true, boom: 'str', baz: 'str', foo: 100 }))
     assert.isTrue(validator({ boom: 'str', baz: 'str', foo: 100 }))
     assert.isTrue(validator({ baz: 'str', foo: 100 }))
@@ -478,7 +511,7 @@ describe('Structs', () => {
     assert.isFalse(validator({}))
   })
 
-  it('tuple with custom fieldOrder', () => {
+  it('tuple with custom fieldOrder', async () => {
     /*
       type StructAsTupleWithCustomFieldorder struct {
         foo Int

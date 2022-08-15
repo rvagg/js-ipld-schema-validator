@@ -2,6 +2,7 @@
 
 import { create } from 'ipld-schema-validator'
 import chai from 'chai'
+import { lint } from './lint.js'
 
 const { assert } = chai
 
@@ -9,16 +10,22 @@ const fauxCid = {}
 fauxCid.asCID = fauxCid
 
 describe('Base kinds', () => {
-  it('null', () => {
+  it('null', async () => {
     const validator = create({ types: {} }, 'Null')
+
+    await lint(validator)
+
     for (const obj of [101, 1.01, 'a string', false, true, fauxCid, Uint8Array.from([1, 2, 3]), [1, 2, 3], { obj: 'nope' }, undefined]) {
       assert.isFalse(validator(obj), `obj: ${obj} != 'null'`)
     }
     assert.isTrue(validator(null))
   })
 
-  it('int', () => {
+  it('int', async () => {
     const validator = create({ types: {} }, 'Int')
+
+    await lint(validator)
+
     for (const obj of [null, 1.01, -0.1, 'a string', false, true, fauxCid, Uint8Array.from([1, 2, 3]), [1, 2, 3], { obj: 'nope' }, undefined]) {
       assert.isFalse(validator(obj), `obj: ${obj} != 'int'`)
     }
@@ -27,8 +34,11 @@ describe('Base kinds', () => {
     assert.isTrue(validator(0))
   })
 
-  it('float', () => {
+  it('float', async () => {
     const validator = create({ types: {} }, 'Float')
+
+    await lint(validator)
+
     for (const obj of [null, 'a string', false, true, fauxCid, Uint8Array.from([1, 2, 3]), [1, 2, 3], { obj: 'nope' }, undefined]) {
       assert.isFalse(validator(obj), `obj: ${obj} != 'float'`)
     }
@@ -40,8 +50,11 @@ describe('Base kinds', () => {
     assert.isTrue(validator(-100))
   })
 
-  it('string', () => {
+  it('string', async () => {
     const validator = create({ types: {} }, 'String')
+
+    await lint(validator)
+
     for (const obj of [null, 1.01, -0.1, 101, -101, false, true, fauxCid, Uint8Array.from([1, 2, 3]), [1, 2, 3], { obj: 'nope' }, undefined]) {
       assert.isFalse(validator(obj), `obj: ${obj} != 'string'`)
     }
@@ -49,8 +62,11 @@ describe('Base kinds', () => {
     assert.isTrue(validator(''))
   })
 
-  it('bool', () => {
+  it('bool', async () => {
     const validator = create({ types: {} }, 'Bool')
+
+    await lint(validator)
+
     for (const obj of [null, 1.01, -0.1, 101, -101, 'a string', fauxCid, Uint8Array.from([1, 2, 3]), [1, 2, 3], { obj: 'nope' }, undefined]) {
       assert.isFalse(validator(obj), `obj: ${obj} != 'bool'`)
     }
@@ -58,8 +74,11 @@ describe('Base kinds', () => {
     assert.isTrue(validator(true))
   })
 
-  it('bytes', () => {
+  it('bytes', async () => {
     const validator = create({ types: {} }, 'Bytes')
+
+    await lint(validator)
+
     for (const obj of [null, 1.01, -0.1, 101, -101, 'a string', false, true, fauxCid, [1, 2, 3], { obj: 'nope' }, undefined]) {
       assert.isFalse(validator(obj), `obj: ${obj} != 'bytes'`)
     }
@@ -67,8 +86,11 @@ describe('Base kinds', () => {
     assert.isTrue(validator(new Uint8Array(0)))
   })
 
-  it('link', () => {
+  it('link', async () => {
     const validator = create({ types: {} }, 'Link')
+
+    await lint(validator)
+
     for (const obj of [null, 1.01, -0.1, 101, -101, 'a string', false, true, new Uint8Array(0), Uint8Array.from([1, 2, 3]), [1, 2, 3], { obj: 'nope' }, undefined]) {
       assert.isFalse(validator(obj), `obj: ${obj} != 'link'`)
     }
@@ -76,8 +98,11 @@ describe('Base kinds', () => {
   })
 
   /* can't use recursive kind names
-  it('list', () => {
+  it('list', async () => {
     const validator = create({ types: {} }, 'List')
+
+    await lint(validator)
+
     for (const obj of [null, 1.01, -0.1, 101, -101, 'a string', false, true, fauxCid, new Uint8Array(0), Uint8Array.from([1, 2, 3]), { obj: 'nope' }, undefined]) {
       assert.isFalse(validator(obj), `obj: ${obj} != 'list'`)
     }
@@ -86,8 +111,11 @@ describe('Base kinds', () => {
     assert.isTrue(validator([]))
   })
 
-  it('map', () => {
+  it('map', async () => {
     const validator = create({ types: {} }, 'Map')
+
+    await lint(validator)
+
     for (const obj of [null, 1.01, -0.1, 101, -101, 'a string', false, true, fauxCid, new Uint8Array(0), Uint8Array.from([1, 2, 3]), [1, 2, 3], undefined]) {
       assert.isFalse(validator(obj), `obj: ${obj} != 'map'`)
     }
@@ -99,7 +127,7 @@ describe('Base kinds', () => {
 })
 
 describe('List types', () => {
-  it('[String:String]', () => {
+  it('[String:String]', async () => {
     const validator = create({
       types: {
         $list: {
@@ -109,6 +137,8 @@ describe('List types', () => {
         }
       }
     }, '$list')
+
+    await lint(validator)
 
     for (const obj of [null, 1.01, -0.1, 101, -101, 'a string', false, true, fauxCid, new Uint8Array(0), Uint8Array.from([1, 2, 3]), { obj: 'nope' }, undefined]) {
       assert.isFalse(validator(obj), `obj: ${obj} != '[String:String]'`)
@@ -122,7 +152,7 @@ describe('List types', () => {
     assert.isTrue(validator([]))
   })
 
-  it('[String:Int]', () => {
+  it('[String:Int]', async () => {
     const validator = create({
       types: {
         $list: {
@@ -132,6 +162,8 @@ describe('List types', () => {
         }
       }
     }, '$list')
+
+    await lint(validator)
 
     for (const obj of [null, 1.01, -0.1, 101, -101, 'a string', false, true, fauxCid, new Uint8Array(0), Uint8Array.from([1, 2, 3]), { obj: 'nope' }, undefined]) {
       assert.isFalse(validator(obj), `obj: ${obj} != '[String:Int]'`)
@@ -145,7 +177,7 @@ describe('List types', () => {
     assert.isTrue(validator([]))
   })
 
-  it('[String:nullable String]', () => {
+  it('[String:nullable String]', async () => {
     const validator = create({
       types: {
         $list: {
@@ -156,6 +188,8 @@ describe('List types', () => {
         }
       }
     }, '$list')
+
+    await lint(validator)
 
     for (const obj of [null, 1.01, -0.1, 101, -101, 'a string', false, true, fauxCid, new Uint8Array(0), Uint8Array.from([1, 2, 3]), { obj: 'nope' }, undefined]) {
       assert.isFalse(validator(obj), `obj: ${obj} != '[String:String]'`)
@@ -172,7 +206,7 @@ describe('List types', () => {
     assert.isTrue(validator([]))
   })
 
-  it('[String:&Any]', () => {
+  it('[String:&Any]', async () => {
     const validator = create({
       types: {
         $list: {
@@ -182,6 +216,8 @@ describe('List types', () => {
         }
       }
     }, '$list')
+
+    await lint(validator)
 
     for (const obj of [null, 1.01, -0.1, 101, -101, 'a string', false, true, fauxCid, new Uint8Array(0), Uint8Array.from([1, 2, 3]), { obj: 'nope' }, undefined]) {
       assert.isFalse(validator(obj), `obj: ${obj} != '[String:&Any]'`)
@@ -197,7 +233,7 @@ describe('List types', () => {
 })
 
 describe('Map types', () => {
-  it('{String:String}', () => {
+  it('{String:String}', async () => {
     const validator = create({
       types: {
         $map: {
@@ -208,6 +244,8 @@ describe('Map types', () => {
         }
       }
     }, '$map')
+
+    await lint(validator)
 
     for (const obj of [null, 1.01, -0.1, 101, -101, 'a string', false, true, fauxCid, new Uint8Array(0), Uint8Array.from([1, 2, 3]), [1, 2, 3], [1, 'one', true], undefined]) {
       assert.isFalse(validator(obj), `obj: ${obj} != '{String:String}'`)
@@ -222,7 +260,7 @@ describe('Map types', () => {
     assert.isTrue(validator({}))
   })
 
-  it('{String:Int}', () => {
+  it('{String:Int}', async () => {
     const validator = create({
       types: {
         $map: {
@@ -233,6 +271,8 @@ describe('Map types', () => {
         }
       }
     }, '$map')
+
+    await lint(validator)
 
     for (const obj of [null, 1.01, -0.1, 101, -101, 'a string', false, true, fauxCid, new Uint8Array(0), Uint8Array.from([1, 2, 3]), ['one', 'two', 'three'], [1, 'one', true], undefined]) {
       assert.isFalse(validator(obj), `obj: ${obj} != '{String:Int}'`)
@@ -247,7 +287,7 @@ describe('Map types', () => {
     assert.isTrue(validator({}))
   })
 
-  it('{String:&Any}', () => {
+  it('{String:&Any}', async () => {
     const validator = create({
       types: {
         $map: {
@@ -258,6 +298,8 @@ describe('Map types', () => {
         }
       }
     }, '$map')
+
+    await lint(validator)
 
     for (const obj of [null, 1.01, -0.1, 101, -101, 'a string', false, true, fauxCid, new Uint8Array(0), Uint8Array.from([1, 2, 3]), ['one', 'two', 'three'], [1, 'one', true], undefined]) {
       assert.isFalse(validator(obj), `obj: ${obj} != '{String:&Any}'`)
@@ -272,7 +314,7 @@ describe('Map types', () => {
     assert.isTrue(validator({}))
   })
 
-  it('{String:nullable Int}', () => {
+  it('{String:nullable Int}', async () => {
     const validator = create({
       types: {
         $map: {
@@ -284,6 +326,8 @@ describe('Map types', () => {
         }
       }
     }, '$map')
+
+    await lint(validator)
 
     for (const obj of [null, 1.01, -0.1, 101, -101, 'a string', false, true, fauxCid, new Uint8Array(0), Uint8Array.from([1, 2, 3]), ['one', 'two', 'three'], [1, 'one', true], undefined]) {
       assert.isFalse(validator(obj), `obj: ${obj} != '{String:Int}'`)
@@ -300,7 +344,7 @@ describe('Map types', () => {
     assert.isTrue(validator({}))
   })
 
-  it('map listpairs', () => {
+  it('map listpairs', async () => {
     /*
       type MapAsListpairs {String:String} representation listpairs
     */
@@ -315,6 +359,8 @@ describe('Map types', () => {
         }
       }
     }, 'MapAsListpairs')
+
+    await lint(validator)
 
     for (const obj of [null, 1.01, -0.1, 101, -101, 'a string', false, true, fauxCid, new Uint8Array(0), Uint8Array.from([1, 2, 3]), undefined]) {
       assert.isFalse(validator(obj), `obj: ${obj} != '{String:String}'`)

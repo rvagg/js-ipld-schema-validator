@@ -2,6 +2,7 @@
 
 import { create } from 'ipld-schema-validator'
 import chai from 'chai'
+import { lint } from './lint.js'
 
 const { assert } = chai
 
@@ -9,8 +10,11 @@ const fauxCid = {}
 fauxCid.asCID = fauxCid
 
 describe('Any', () => {
-  it('AnyScalar', () => {
+  it('AnyScalar', async () => {
     const validator = create({ types: {} }, 'AnyScalar')
+
+    await lint(validator)
+
     for (const obj of [1.01, -0.1, 101, -101, 'a string', false, true, new Uint8Array(0), Uint8Array.from([1, 2, 3])]) {
       assert.isTrue(validator(obj), `obj: ${obj} == 'AnyScalar'`)
     }
@@ -21,7 +25,7 @@ describe('Any', () => {
     assert.isFalse(validator(['str']))
   })
 
-  it('{String:AnyScalar}', () => {
+  it('{String:AnyScalar}', async () => {
     const validator = create({
       types: {
         $map: {
@@ -32,6 +36,9 @@ describe('Any', () => {
         }
       }
     }, '$map')
+
+    await lint(validator)
+
     for (const obj of [1.01, -0.1, 101, -101, 'a string', false, true, new Uint8Array(0), Uint8Array.from([1, 2, 3])]) {
       assert.isTrue(validator({ a: obj }), `{a:obj}: ${obj} == 'AnyScalar'`)
       assert.isTrue(validator({ a: obj, b: obj }), `{a:obj, b:obj}: ${obj} == 'AnyScalar'`)
@@ -45,7 +52,7 @@ describe('Any', () => {
     assert.isFalse(validator({ a: [] }))
   })
 
-  it('[AnyScalar]', () => {
+  it('[AnyScalar]', async () => {
     const validator = create({
       types: {
         $list: {
@@ -55,6 +62,9 @@ describe('Any', () => {
         }
       }
     }, '$list')
+
+    await lint(validator)
+
     for (const obj of [1.01, -0.1, 101, -101, 'a string', false, true, new Uint8Array(0), Uint8Array.from([1, 2, 3])]) {
       assert.isTrue(validator([obj]), `[obj]: ${obj} == 'AnyScalar'`)
       assert.isTrue(validator([obj, obj]), `[obj,obj]: ${obj} == 'AnyScalar'`)
@@ -68,8 +78,11 @@ describe('Any', () => {
     assert.isFalse(validator([[]]))
   })
 
-  it('Any', () => {
+  it('Any', async () => {
     const validator = create({ types: {} }, 'Any')
+
+    await lint(validator)
+
     for (const obj of [null, 1.01, -0.1, 101, -101, 'a string', false, true, fauxCid, new Uint8Array(0), Uint8Array.from([1, 2, 3]), {}, { a: 1 }, { a: 'str', b: 2 }, { a: 'str' }, [], [1], ['str', 2], ['str']]) {
       assert.isTrue(validator(obj), `obj: ${obj} == 'Any'`)
     }

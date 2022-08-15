@@ -2,6 +2,7 @@
 
 import { create } from 'ipld-schema-validator'
 import chai from 'chai'
+import { lint } from './lint.js'
 
 const { assert } = chai
 
@@ -9,7 +10,7 @@ const fauxCid = {}
 fauxCid.asCID = fauxCid
 
 describe('Enums', () => {
-  it('string', () => {
+  it('string', async () => {
     const validator = create({
       types: {
         SimpleEnum: {
@@ -25,6 +26,8 @@ describe('Enums', () => {
       }
     }, 'SimpleEnum')
 
+    await lint(validator)
+
     assert.isTrue(validator('Foo'))
     assert.isTrue(validator('Bar'))
     assert.isTrue(validator('Baz'))
@@ -35,7 +38,7 @@ describe('Enums', () => {
     }
   })
 
-  it('string renames', () => {
+  it('string renames', async () => {
     const validator = create({
       types: {
         SimpleEnumWithValues: {
@@ -56,6 +59,8 @@ describe('Enums', () => {
       }
     }, 'SimpleEnumWithValues')
 
+    await lint(validator)
+
     assert.isTrue(validator('f'))
     assert.isFalse(validator('Foo'))
     assert.isTrue(validator('Bar'))
@@ -68,7 +73,7 @@ describe('Enums', () => {
     }
   })
 
-  it('int', () => {
+  it('int', async () => {
     const validator = create({
       types: {
         SimpleEnum: {
@@ -89,6 +94,8 @@ describe('Enums', () => {
         }
       }
     }, 'SimpleEnum')
+
+    await lint(validator)
 
     assert.isTrue(validator(0))
     assert.isTrue(validator(1))

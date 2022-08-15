@@ -2,6 +2,7 @@
 
 import { create } from 'ipld-schema-validator'
 import chai from 'chai'
+import { lint } from './lint.js'
 
 const { assert } = chai
 
@@ -9,7 +10,7 @@ const fauxCid = {}
 fauxCid.asCID = fauxCid
 
 describe('Unions', () => {
-  it('keyed', () => {
+  it('keyed', async () => {
     const validator = create({
       types: {
         UnionKeyed: {
@@ -31,6 +32,8 @@ describe('Unions', () => {
       }
     }, 'UnionKeyed')
 
+    await lint(validator)
+
     assert.isTrue(validator({ foo: 100 }))
     assert.isTrue(validator({ bar: true }))
     assert.isTrue(validator({ baz: 'yep' }))
@@ -40,7 +43,7 @@ describe('Unions', () => {
     assert.isFalse(validator({ baz: true }))
   })
 
-  it('kinded', () => {
+  it('kinded', async () => {
     const validator = create({
       types: {
         Bar: { bool: {} },
@@ -65,6 +68,8 @@ describe('Unions', () => {
       }
     }, 'UnionKinded')
 
+    await lint(validator)
+
     assert.isTrue(validator(100))
     assert.isTrue(validator(-100))
     assert.isTrue(validator(true))
@@ -82,7 +87,7 @@ describe('Unions', () => {
     /**
      * @param {{expectedType?: string}} link
      */
-    const run = (link) => {
+    const run = async (link) => {
       const validator = create({
         types: {
           mylist: {
@@ -115,6 +120,8 @@ describe('Unions', () => {
         }
       }, 'UnionKinded')
 
+      await lint(validator)
+
       for (const obj of [null, 1.01, -0.1, 101, -101, 'a string', false, true, new Uint8Array(0), Uint8Array.from([1, 2, 3]), undefined]) {
         assert.isFalse(validator(obj))
       }
@@ -129,16 +136,16 @@ describe('Unions', () => {
       assert.isFalse(validator({ a: 'a', b: 2 }))
     }
 
-    it('named link', () => {
-      run({ expectedType: 'MyLink' })
+    it('named link', async () => {
+      await run({ expectedType: 'MyLink' })
     })
 
-    it('unnamed link', () => {
-      run({})
+    it('unnamed link', async () => {
+      await run({})
     })
   })
 
-  it('inline', () => {
+  it('inline', async () => {
     /*
       type Bar struct {
         bral String
@@ -193,6 +200,8 @@ describe('Unions', () => {
       }
     }, 'UnionInline')
 
+    await lint(validator)
+
     const obj1 = { tag: 'foo', froz: true }
     assert.isTrue(validator(obj1))
     assert.deepEqual(obj1, { tag: 'foo', froz: true }) // unmolested
@@ -210,7 +219,7 @@ describe('Unions', () => {
     assert.isFalse(validator({ tag: 'foo', froz: 'zot' }))
   })
 
-  it('envelope', () => {
+  it('envelope', async () => {
     /*
       type Bar bool
 
@@ -255,6 +264,8 @@ describe('Unions', () => {
       }
     }, 'UnionEnvelope')
 
+    await lint(validator)
+
     assert.isTrue(validator({ bim: 'foo', bam: 100 }))
     assert.isTrue(validator({ bim: 'bar', bam: true }))
     assert.isTrue(validator({ bim: 'baz', bam: 'here be baz' }))
@@ -272,7 +283,7 @@ describe('Unions', () => {
     assert.isFalse(validator([]))
   })
 
-  it('bytesprefix', () => {
+  it('bytesprefix', async () => {
     /*
       type Bls12_381Signature bytes
 
@@ -303,6 +314,8 @@ describe('Unions', () => {
         }
       }
     }, 'Signature')
+
+    await lint(validator)
 
     for (const obj of [null, 1.01, -0.1, 101, -101, 'a string', false, true, {}, [], undefined]) {
       assert.isFalse(validator(obj))

@@ -11,7 +11,7 @@
     "prepublishOnly": "npm run build",
     "lint": "standard",
     "test:node": "c8 --check-coverage --branches 100 --functions 100 --lines 100 mocha test/test-*.js",
-    "test:browser": "polendina --cleanup test/test-*.js",
+    "test:browser": "polendina --cleanup --webpack-config test/webpack.config.js test/test-*.js",
     "test": "npm run lint && npm run build && npm run test:node && npm run test:browser",
     "coverage": "c8 --reporter=html mocha test/test-*.js && npm_config_yes=true npx st -d coverage -p 8080"
   },

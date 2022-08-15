@@ -2,6 +2,7 @@
 
 import { create } from 'ipld-schema-validator'
 import chai from 'chai'
+import { lint } from './lint.js'
 
 const { assert } = chai
 
@@ -9,7 +10,7 @@ const fauxCid = {}
 fauxCid.asCID = fauxCid
 
 describe('Nested maps and lists', () => {
-  it('{String:[&Any]}', () => {
+  it('{String:[&Any]}', async () => {
     const validator = create({
       types: {
         $list: {
@@ -25,6 +26,8 @@ describe('Nested maps and lists', () => {
         }
       }
     }, '$map')
+
+    await lint(validator)
 
     assert.isFalse(validator({ num: 1, str: 'obj' }))
     assert.isFalse(validator({ o: fauxCid }))
@@ -42,7 +45,7 @@ describe('Nested maps and lists', () => {
     assert.isFalse(validator([{ o: [] }]))
   })
 
-  it('[{String:Int}]', () => {
+  it('[{String:Int}]', async () => {
     const validator = create({
       types: {
         $map: {
@@ -58,6 +61,8 @@ describe('Nested maps and lists', () => {
         }
       }
     }, '$list')
+
+    await lint(validator)
 
     assert.isFalse(validator([{ num: 1, str: 'obj' }]))
     assert.isFalse(validator([{ str: 'one' }]))
