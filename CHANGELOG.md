@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/rvagg/js-ipld-schema-validator/compare/v1.0.0...v1.0.1) (2022-08-16)
+
+
+### Bug Fixes
+
+* make CLI work again ([d3cab31](https://github.com/rvagg/js-ipld-schema-validator/commit/d3cab319b1c1f68019c70e3c89629fee2044b863))
+
 ## [1.0.0](https://github.com/rvagg/js-ipld-schema-validator/compare/v0.2.3...v1.0.0) (2022-08-15)
 
 
