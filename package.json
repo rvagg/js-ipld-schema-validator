@@ -59,7 +59,7 @@
     }
   },
   "dependencies": {
-    "ipld-schema": "^3.0.2",
+    "ipld-schema": "^3.0.3",
     "yargs": "^17.5.1"
   },
   "release": {

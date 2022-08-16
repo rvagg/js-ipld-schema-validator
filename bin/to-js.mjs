@@ -2,10 +2,9 @@
 
 import process from 'process'
 import { readFile } from 'fs/promises'
-import path from 'path'
 import { parse } from 'ipld-schema'
 // @ts-ignore
-import collectInput from 'ipld-schema/bin/collect-input.js'
+import { collectInput } from 'ipld-schema/bin/collect-input.js'
 import { Builder, safeReference } from 'ipld-schema-validator'
 
 /**
@@ -13,7 +12,7 @@ import { Builder, safeReference } from 'ipld-schema-validator'
  */
 
 async function version () {
-  return JSON.parse(await readFile(path.resolve('package.json'), 'utf8')).version
+  return JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8')).version
 }
 
 /**
