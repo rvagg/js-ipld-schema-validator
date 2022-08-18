@@ -1,3 +1,10 @@
+## [1.0.2](https://github.com/rvagg/js-ipld-schema-validator/compare/v1.0.1...v1.0.2) (2022-08-18)
+
+
+### Bug Fixes
+
+* lint validator functions in tests ([#52](https://github.com/rvagg/js-ipld-schema-validator/issues/52)) ([61ba9c6](https://github.com/rvagg/js-ipld-schema-validator/commit/61ba9c6cab3aa02904fbbb19224865da3cdd8303))
+
 ## [1.0.1](https://github.com/rvagg/js-ipld-schema-validator/compare/v1.0.0...v1.0.1) (2022-08-16)
 
 
