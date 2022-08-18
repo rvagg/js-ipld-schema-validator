@@ -12,7 +12,7 @@
  * @typedef {(obj:any)=>boolean} ValidatorFunction
  */
 
-const safeNameRe = /^[a-z][a-z0-9]+$/i
+const safeNameRe = /^\$?[a-z][a-z0-9]+$/i
 
 /**
  * @param {string} name
@@ -140,7 +140,7 @@ export function create (schema, root) {
   builder.addType(root)
 
   let fn = builder.dumpValidators()
-  fn += `return Types['${root}'](obj);`
+  fn += `return Types${safeReference(root)}(obj)`
   // console.log(fn)
 
   return /** @type {ValidatorFunction} */ (new Function('obj', fn))
