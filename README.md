@@ -1,5 +1,7 @@
 # ipld-schema-validator
 
+**ARCHIVED: The functionality of this library has been rolled in to `@ipld/schema`, found here: https://github.com/ipld/js-ipld-schema**
+
 Build fast and strict JavaScript object form validators using [IPLD Schemas](https://specs.ipld.io/schemas/).
 
 ## Example
